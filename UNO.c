@@ -62,8 +62,10 @@ void insertAtEnd(Node** headRef, Node** tailRef, int* count, int cardNum, int nu
 void deleteAtBeginning(Node** headRef, int* count);
 void deleteAtMiddle(Node** headRef, int* count, int index);
 void deleteAtEnd(Node** headRef, Node** tailRef, int* count);
-void cardDeckFinder(Node* node, Temp1 *cardDeckPtr, int index);
+void cardSave(Node* node, Temp1 *cardTemp, int index);
 void printList(Node* node);
+char * playerNumberToString(int x);
+
 // Main Code
 int main() {
 	/*
@@ -78,6 +80,11 @@ int main() {
 	Temp1 linkedListTemp;
 
 	int drawPileCount = 0;
+
+	// Discard Pile Variables
+	Node *discardHead = NULL, *discardTail = NULL;
+
+	int discardPileCount = 0;
 
 	// Loop Variables
 	int i, j, k, l;
@@ -603,26 +610,15 @@ int main() {
 			printf(" Turns \n");
 			printf("=======\n\n");
 
-			for (i = 0; i < 4; i++) {
-				printf("%d. ", i + 1);
-				
-				if (turnCycle[i] == 1)
-					printf("You");
-				else if (turnCycle[i] == 2)
-					printf("Bot 1");
-				else if (turnCycle[i] == 3)
-					printf("Bot 2");
-				else if (turnCycle[i] == 4)
-					printf("Bot 3");
-
-				puts("");
-			}
+			for (i = 0; i < 4; i++)
+				printf("%d. %s\n", i + 1, playerNumberToString(turnCycle[i]));
 
 			printf("\nPress \'Enter\' to continue!");
 			getchar();
 
 			// Game Resetter
 			endGame = false;
+			reversed = false;
 			rounds = 0;
 			playersWon = 0;
 			playerCards = 0;
@@ -630,18 +626,30 @@ int main() {
 			bot2Cards = 0;
 			bot3Cards = 0;
 
-			// Putting player cards
-			for (i = 0; i < 7; i++) {
+			for (i = 0; i < 28; i++) {
 				// Pick a random card from draw pile
 				rng1 = rand() % drawPileCount;
 
-				// Changes the value of linkedListTemp to insert to the draw pile
-				cardDeckFinder(cardHead, &linkedListTemp, rng1 + 1);
+				// Saves card value
+				cardSave(cardHead, &linkedListTemp, rng1);
 
-				// Puts a card into card deck
-				insertAtEnd(&playerHead, &playerTail, &playerCards, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
-				
-				// Deletes card from discard pile
+				// Putting player cards
+				if (i % 4 == 0)
+					insertAtEnd(&playerHead, &playerTail, &playerCards, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
+
+				// Putting bot 1 cards
+				else if (i % 4 == 1)
+					insertAtEnd(&bot1Head, &bot1Tail, &bot1Cards, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
+
+				// Putting bot 2 cards
+				else if (i % 4 == 2)
+					insertAtEnd(&bot2Head, &bot2Tail, &bot2Cards, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
+
+				// Putting bot 3 cards
+				else if (i % 4 == 3)
+					insertAtEnd(&bot3Head, &bot3Tail, &bot3Cards, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
+
+				// Deletes the card from draw pile
 				if (rng1 == 0)
 					deleteAtBeginning(&cardHead, &drawPileCount);
 				else if (rng1 == drawPileCount - 1)
@@ -649,30 +657,6 @@ int main() {
 				else
 					deleteAtMiddle(&cardHead, &drawPileCount, rng1);
 			}
-			system("cls");
-
-			printList(playerHead);
-			puts("");
-			printList(cardHead);
-
-			getchar();
-
-			/*
-			// Putting bot 1 cards
-			for (i = 0; i < 7; i++) {
-
-			}
-
-			// Putting bot 2 cards
-			for (i = 0; i < 7; i++) {
-
-			}
-
-			// Putting bot 3 cards
-			for (i = 0; i < 7; i++) {
-
-			}
-			*/
 
 			do
 			{
@@ -680,17 +664,20 @@ int main() {
 				logo();
 
 				// Turn display
-				printf("Players:\n");
+				if (reversed)
+					printf("Players (reversed):\n");
+				else
+					printf("Players:\n");
 
 				for (i = 0; i < 4; i++) {
-					printf(" ");
-					
+					// Puts a bracket for the player's turn
 					if (rounds % 4 == i) {
-
+						printf("[");
+						printf("%s", playerNumberToString(turnCycle[i]));
+						printf("]\n");
 					}
-					else {
-
-					}
+					else
+						printf(" %s\n", playerNumberToString(turnCycle[i]));
 				}
 
 				// 1st turn
@@ -712,6 +699,16 @@ int main() {
 				else if (rounds % 4 == 3) {
 
 				}
+
+				if (reversed)
+					rounds--;
+				else
+					rounds++;
+				
+				if (rounds < 0)
+					rounds = 3;
+
+				getchar();
 			}
 			while (!endGame);
 			
@@ -868,18 +865,16 @@ void deleteAtEnd(Node** headRef, Node** tailRef, int* count) {
 	(*count)--;
 }
 
-void cardDeckFinder(Node* node, Temp1 *cardDeckPtr, int index) {
-	while (node != NULL) {
-		if (node -> cardNumber == index) {
-			cardDeckPtr -> number = node -> number;
-			strcpy(cardDeckPtr -> type, node -> type);
-			strcpy(cardDeckPtr -> color, node -> color);
+void cardSave(Node* node, Temp1 *cardTemp, int index) {
+	int i;
 
-			break;
-		}
-
+	for (i = 0; i < index; i++)
 		node = node -> next;
-	}
+	
+	cardTemp -> cardNumber = node -> cardNumber;
+	cardTemp -> number = node -> number;
+	strcpy(cardTemp -> type, node -> type);
+	strcpy(cardTemp -> color, node -> color);
 }
 
 void printList(Node* node) {
@@ -888,4 +883,15 @@ void printList(Node* node) {
 		node = node -> next;
 	}
 	puts("");
+}
+
+char * playerNumberToString(int x) {
+	if (x == 1)
+		return "Player";
+	else if (x == 2)
+		return "Bot 1";
+	else if (x == 3)
+		return "Bot 2";
+	else if (x == 4)
+		return "Bot 3";
 }
