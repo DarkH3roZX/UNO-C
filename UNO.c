@@ -871,7 +871,6 @@ void deleteAtEnd(Node** headRef, Node** tailRef, int* count) {
 void cardDeckFinder(Node* node, Temp1 *cardDeckPtr, int index) {
 	while (node != NULL) {
 		if (node -> cardNumber == index) {
-			cardDeckPtr -> cardNumber = node -> cardNumber;
 			cardDeckPtr -> number = node -> number;
 			strcpy(cardDeckPtr -> type, node -> type);
 			strcpy(cardDeckPtr -> color, node -> color);
