@@ -9,7 +9,7 @@
 /*
  Structures
  */
-// Draw Pile
+// Card Linked List
 typedef struct Node {
 	int cardNumber;
 	int number; // -1 if it's not a normal card type
@@ -20,7 +20,7 @@ typedef struct Node {
 	struct Node *next;
 } Node;
 
-// Linked List Helper
+// Linked List Temp
 typedef struct {
 	int cardNumber;
 	int number;
@@ -65,6 +65,10 @@ void deleteAtEnd(Node** headRef, Node** tailRef, int* count);
 void cardSave(Node* node, Temp1 *cardTemp, int index);
 void printList(Node* node);
 char * playerNumberToString(int x);
+void doReverse(bool *reverse);
+void doSkip(int *roundsPtr, int turnCycle[], int playerTurn);
+void doWild(int turnCycle[], int playerTurn, bool *tempBool, Temp1 *linkedListTemp);
+void cardPrint(Temp1 linkedListTemp);
 
 // Main Code
 int main() {
@@ -77,13 +81,10 @@ int main() {
 
 	// Card Deck Variables
 	Node *cardHead = NULL, *cardTail = NULL;
-	Temp1 linkedListTemp;
-
 	int drawPileCount = 0;
 
 	// Discard Pile Variables
 	Node *discardHead = NULL, *discardTail = NULL;
-
 	int discardPileCount = 0;
 
 	// Loop Variables
@@ -99,6 +100,9 @@ int main() {
 	int tempInt;
 	char tempChar;
 	char tempString[100];
+	bool tempBool;
+	Temp1 linkedListTemp;
+	Temp1 linkedListTemp2;
 	
 	// Rock Paper Scissors Variables
 	int winnerRPS;
@@ -111,12 +115,20 @@ int main() {
 
 	// Game Variables
 	int rounds;
+	int gameWarp;
 	int playersWon;
+	int playerTurn;
+	int cardAmountInput;
+	int currPodium;
 	int turnCycle[4];
 	int podiumPlace[4];
 
 	bool endGame;
 	bool reversed;
+	bool validInput;
+	bool roundZero;
+	bool validSkip;
+	bool sayUnoSuccess;
 
 	// Player Card Linked List
 	Node *playerHead = NULL, *playerTail = NULL;
@@ -620,6 +632,7 @@ int main() {
 			endGame = false;
 			reversed = false;
 			rounds = 0;
+			currPodium = 0;
 			playersWon = 0;
 			playerCards = 0;
 			bot1Cards = 0;
@@ -658,10 +671,47 @@ int main() {
 					deleteAtMiddle(&cardHead, &drawPileCount, rng1);
 			}
 
+			// Puts 1st card in a discard pile
+			while (true) {
+				// Picks a random card from draw pile
+				rng1 = rand() % drawPileCount;
+
+				// Saves card value
+				cardSave(cardHead, &linkedListTemp, rng1);
+
+				// Check if the card is unvalid to be put in the discard pile
+				if (strcmp(linkedListTemp.type, "+4") == 0)
+					continue;
+
+				// Putting a card
+				insertAtEnd(&discardHead, &discardTail, &discardPileCount, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
+
+				// Deletes the card from draw pile
+				if (rng1 == 0)
+					deleteAtBeginning(&cardHead, &drawPileCount);
+				else if (rng1 == drawPileCount - 1)
+					deleteAtEnd(&cardHead, &cardTail, &drawPileCount);
+				else
+					deleteAtMiddle(&cardHead, &drawPileCount, rng1);
+				
+				break;
+			}
+
+			roundZero = true;
+			tempBool = true;
+
+			/*
+			 Game Code
+			 */
 			do
 			{
+				// Reset
+				playerTurn = rounds % 4;
+
+				// Logo Input
 				system("cls");
 				logo();
+				printf("%d\n", drawPileCount);
 
 				// Turn display
 				if (reversed)
@@ -680,24 +730,209 @@ int main() {
 						printf(" %s\n", playerNumberToString(turnCycle[i]));
 				}
 
-				// 1st turn
-				if (rounds % 4 == 0) {
+				// Displays the current card
+				if (tempBool) {
+					cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
 
+
+					//Tester
+					linkedListTemp.number = -1;
+					strcpy(linkedListTemp.type, "Wild");
+					strcpy(linkedListTemp.color, "Black");
+				}
+				else
+					tempBool = true;
+
+				printf("\nCurrent Card : ");
+				cardPrint(linkedListTemp);
+				puts("");
+
+				// Displays the cards
+				printf("\n Cards \n");
+				printf("=======\n");
+
+				// Prints the amount of bot 1 cards
+				printf("\nBot 1 : ");
+
+				for (i = 0; i < bot1Cards; i++)
+					printf("[] ");
+				
+				// Prints the amount of bot 2 cards
+				printf("\nBot 2 : ");
+
+				for (i = 0; i < bot2Cards; i++)
+					printf("[] ");
+				
+				// Prints the amount of bot 3 cards
+				printf("\nBot 3 : ");
+
+				for (i = 0; i < bot3Cards; i++)
+					printf("[] ");
+				
+				puts("\n");
+
+				printf("You:\n");
+				printList(playerHead);
+
+				// If the first card is an action card
+				if (roundZero && linkedListTemp.number == -1) {
+					if (strcmp(linkedListTemp.type, "Reverse") == 0) {
+						doReverse(&reversed);
+					}
+					else if (strcmp(linkedListTemp.type, "Skip") == 0) {
+						doSkip(&rounds, turnCycle, playerTurn);
+						roundZero = false;
+
+						continue;
+					}
+					else if (strcmp(linkedListTemp.type, "+2") == 0) {
+						if (turnCycle[playerTurn] == 1)
+							printf("You ");
+						else if (turnCycle[playerTurn] == 2)
+							printf("Bot 1 ");
+						else if (turnCycle[playerTurn] == 3)
+							printf("Bot 2 ");
+						else if (turnCycle[playerTurn] == 4)
+							printf("Bot 3 ");
+						
+						printf("got 2 cards, press \'Enter\' to continue");
+						getchar();
+						
+						// +2 algorithm
+						for (i = 0; i < 2; i++) {
+							// Pick a random card from draw pile
+							rng1 = rand() % drawPileCount;
+
+							// Saves card value
+							cardSave(cardHead, &linkedListTemp, rng1);
+
+							// Putting player cards
+							if (turnCycle[0] == 1)
+								insertAtEnd(&playerHead, &playerTail, &playerCards, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
+
+							// Putting bot 1 cards
+							else if (turnCycle[0] == 2)
+								insertAtEnd(&bot1Head, &bot1Tail, &bot1Cards, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
+
+							// Putting bot 2 cards
+							else if (turnCycle[0] == 3)
+								insertAtEnd(&bot2Head, &bot2Tail, &bot2Cards, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
+
+							// Putting bot 3 cards
+							else if (turnCycle[0] == 4)
+								insertAtEnd(&bot3Head, &bot3Tail, &bot3Cards, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
+
+							// Deletes the card from draw pile
+							if (rng1 == 0)
+								deleteAtBeginning(&cardHead, &drawPileCount);
+							else if (rng1 == drawPileCount - 1)
+								deleteAtEnd(&cardHead, &cardTail, &drawPileCount);
+							else
+								deleteAtMiddle(&cardHead, &drawPileCount, rng1);
+						}
+
+						// Skip Algorithm
+						rounds++;
+						roundZero = false;
+
+						continue;
+					}
+					else if (strcmp(linkedListTemp.type, "Wild") == 0) {
+						doWild(turnCycle, playerTurn, &tempBool, &linkedListTemp);
+
+						roundZero = false;
+
+						continue;
+					}
 				}
 
-				// 2nd turn
-				else if (rounds % 4 == 1) {
+				if (turnCycle[playerTurn] == 1) {
+					// UI
+					printf("1. Input a card\n");
+					printf("2. Get a card from draw pile\n");
 
+					do
+					{
+						printf("Your Choice : ");
+						scanf("%d", &gameWarp);
+						while (getchar() != '\n');
+					}
+					while (gameWarp != 1 && gameWarp != 2);
+
+					if (gameWarp == 1) {
+						do
+						{
+							// Resetter
+							validInput = false;
+
+							// UI
+							printf("Choose the amount of cards that you want to input : ");
+							scanf("%d", &cardAmountInput);
+							while (getchar() != '\n');
+
+							// If user inputs invalid value
+							if (cardAmountInput < 1 || cardAmountInput > playerCards) {
+								printf("Invalid Input\n");
+
+								continue;
+							}
+
+							// Checks the maximum amount of cards that can be inserted
+							
+
+							if (!validInput) {
+								printf("You can\'t input that much card\n");
+
+								continue;
+							}
+							else
+								break;
+						}
+						while (true);
+					}
+					else if (gameWarp == 2) {
+						// Pick a random card from draw pile
+						rng1 = rand() % drawPileCount;
+
+						// Saves card value
+						cardSave(cardHead, &linkedListTemp, rng1);
+
+						// Putting player cards
+						insertAtEnd(&playerHead, &playerTail, &playerCards, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
+
+						// Deletes the card from draw pile
+						if (rng1 == 0)
+							deleteAtBeginning(&cardHead, &drawPileCount);
+						else if (rng1 == drawPileCount - 1)
+							deleteAtEnd(&cardHead, &cardTail, &drawPileCount);
+						else
+							deleteAtMiddle(&cardHead, &drawPileCount, rng1);
+
+						// Prints the card that the player gets
+						printf("\nYou got ");
+						cardPrint(linkedListTemp);
+						
+						printf("\nPress \'Enter\' to conntinue");
+						getchar();
+					}
 				}
+				else {
+					printf("Press \'Enter\' for ");
 
-				// 3rd turn
-				else if (rounds % 4 == 2) {
+					switch (turnCycle[playerTurn]) {
+						case 2:
+							printf("Bot 1 ");
+							break;
+						case 3:
+							printf("Bot 2 ");
+							break;
+						case 4:
+							printf("Bot 3 ");
+							break;
+					}
 
-				}
-
-				// 4th turn
-				else if (rounds % 4 == 3) {
-
+					printf("to play their cards");
+					getchar();
 				}
 
 				if (reversed)
@@ -707,13 +942,8 @@ int main() {
 				
 				if (rounds < 0)
 					rounds = 3;
-
-				getchar();
 			}
 			while (!endGame);
-			
-
-			getchar();
 		}
 
 		// Instructions
@@ -723,7 +953,27 @@ int main() {
 
 		// Credits
 		else if (mainWarp == 3) {
+			system("cls");
+			logo();
 
+			printf(" Credits \n");
+			printf("=========\n\n");
+
+			printf("%20s | DarkH3roZX\n", "Programmer");
+			printf("%20s | adVenT47\n\n", "Programmer Assistor");
+
+			printf("%20s | adVenT47\n", "Sketch");
+			printf("%20s | DarkH3roZX\n\n", "Sketch");
+
+			printf("%20s | DarkH3roZX\n", "Tester 1");
+			printf("%20s | adVenT47\n\n", "Tester 2");
+
+			printf("=================\n");
+			printf(" Vagous Alliance \n");
+			printf("=================\n\n");
+
+			printf("Press \'Enter\' to go back to main menu");
+			getchar();
 		}
 	}
 	while (mainWarp != 4);
@@ -878,10 +1128,25 @@ void cardSave(Node* node, Temp1 *cardTemp, int index) {
 }
 
 void printList(Node* node) {
+	int x = 1;
+
 	while (node != NULL) {
-		printf("%d %d %s %s\n", node -> cardNumber, node -> number, node -> type, node -> color);
+		printf("%d. ", x);
+
+		if (strcmp(node -> color, "Black") != 0)
+			printf("%s ", node -> color);
+		
+		if (node -> number != -1)
+			printf("%d ", node -> number);
+		else
+			printf("%s ", node -> type);
+
+		puts("");
+		//printf("- %d %s %s\n", node -> number, node -> type, node -> color);
 		node = node -> next;
+		x++;
 	}
+
 	puts("");
 }
 
@@ -894,4 +1159,127 @@ char * playerNumberToString(int x) {
 		return "Bot 2";
 	else if (x == 4)
 		return "Bot 3";
+}
+
+void doReverse(bool *reverse) {
+	if (*reverse)
+		*reverse = false;
+	else
+		*reverse = true;
+}
+
+void doSkip(int *roundsPtr, int turnCycle[], int playerTurn) {
+	if (turnCycle[playerTurn] == 1)
+		printf("You ");
+	else if (turnCycle[playerTurn] == 2)
+		printf("Bot 1 ");
+	else if (turnCycle[playerTurn] == 3)
+		printf("Bot 2 ");
+	else if (turnCycle[playerTurn] == 4)
+		printf("Bot 3 ");
+	
+	printf("got skipped, press \'Enter\' to continue");
+	getchar();
+
+	(*roundsPtr)++;
+}
+
+void doWild(int turnCycle[], int playerTurn, bool *tempBoolPtr, Temp1 *linkedListTempPtr) {
+	int colorPicker;
+
+	char wildCardInput[7];
+
+	// If the turn is player's
+	if (turnCycle[playerTurn] == 1) {
+		do
+		{
+			printf("1. Blue\n");
+			printf("2. Red\n");
+			printf("3. Green\n");
+			printf("4. Yellow\n");
+
+			// Player Picks a color
+			printf("Pick a color : ");
+			scanf("%d", &colorPicker);
+			while (getchar() != '\n');
+		} 
+		while (colorPicker != 1 && colorPicker != 2 && colorPicker != 3 && colorPicker != 4);
+
+		// Prints name
+		printf("You chose ");
+
+		// Prints color
+		if (colorPicker == 1) {
+			strcpy(wildCardInput, "Blue");
+			printf("Blue");
+		}
+		else if (colorPicker == 2) {
+			strcpy(wildCardInput, "Red");
+			printf("Red");
+		}
+		else if (colorPicker == 3) {
+			strcpy(wildCardInput, "Green");
+			printf("Green");
+		}
+		else if (colorPicker == 4) {
+			strcpy(wildCardInput, "Yellow");
+			printf("Yellow");
+		}
+	}
+
+	// If the turn is bot's
+	else {
+		colorPicker = rand() % 4 + 1;
+		
+		// Prints name
+		if (turnCycle[playerTurn] == 2)
+			printf("Bot 1 chooses ");
+		else if (turnCycle[playerTurn] == 3)
+			printf("Bot 2 chooses ");
+		else if (turnCycle[playerTurn] == 4)
+			printf("Bot 3 chooses ");
+		
+		// Prints color
+		if (colorPicker == 1) {
+			strcpy(wildCardInput, "Blue");
+			printf("Blue");
+		}
+		else if (colorPicker == 2) {
+			strcpy(wildCardInput, "Red");
+			printf("Red");
+		}
+		else if (colorPicker == 3) {
+			strcpy(wildCardInput, "Green");
+			printf("Green");
+		}
+		else if (colorPicker == 4) {
+			strcpy(wildCardInput, "Yellow");
+			printf("Yellow");
+		}
+	}
+
+	printf(", Press \'Enter\' To Continue");
+	getchar();
+
+	// Changes the color of the wild card
+	strcpy(linkedListTempPtr -> color, wildCardInput);
+
+	*tempBoolPtr = false;
+}
+
+void cardPrint(Temp1 linkedListTemp) {
+	// Chosen Wild
+	if (strcmp(linkedListTemp.color, "Black") != 0 && (strcmp(linkedListTemp.type, "Wild") == 0 || strcmp(linkedListTemp.type, "+4") == 0))
+		printf("%s (%s)", linkedListTemp.type, linkedListTemp.color);
+
+	// Normal
+	else {
+		if (strcmp(linkedListTemp.color, "Black") != 0)
+			printf("%s ", linkedListTemp.color);
+		
+		if (linkedListTemp.number != -1)
+			printf("%d ", linkedListTemp.number);
+		else
+			printf("%s ", linkedListTemp.type);
+	}
 }
