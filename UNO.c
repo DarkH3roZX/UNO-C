@@ -62,13 +62,14 @@ void insertAtEnd(Node** headRef, Node** tailRef, int* count, int cardNum, int nu
 void deleteAtBeginning(Node** headRef, int* count);
 void deleteAtMiddle(Node** headRef, int* count, int index);
 void deleteAtEnd(Node** headRef, Node** tailRef, int* count);
-void cardSave(Node* node, Temp1 *cardTemp, int index);
+void cardSave(Node* node, Temp1 *linkedListTemp, int index);
 void printList(Node* node);
 char * playerNumberToString(int x);
 void doReverse(bool *reverse);
 void doSkip(int *roundsPtr, int turnCycle[], int playerTurn);
 void doWild(int turnCycle[], int playerTurn, bool *tempBool, Temp1 *linkedListTemp);
 void cardPrint(Temp1 linkedListTemp);
+bool canInputCard(Node* node, Temp1 linkedListTemp, int playerCards);
 
 // Main Code
 int main() {
@@ -87,7 +88,7 @@ int main() {
 	Node *discardHead = NULL, *discardTail = NULL;
 	int discardPileCount = 0;
 
-	// Loop Variables
+	// For Loop Variables
 	int i, j, k, l;
 
 	// Warp Variables
@@ -122,13 +123,20 @@ int main() {
 	int currPodium;
 	int turnCycle[4];
 	int podiumPlace[4];
+	int cardPicks[95];
 
 	bool endGame;
 	bool reversed;
-	bool validInput;
 	bool roundZero;
 	bool validSkip;
 	bool sayUnoSuccess;
+
+	// Validation Variables
+	int maxCardAllowed;
+	int allowedCardCount;
+
+	bool canInput;
+	bool validInput;
 
 	// Player Card Linked List
 	Node *playerHead = NULL, *playerTail = NULL;
@@ -136,6 +144,7 @@ int main() {
 	Node *bot2Head = NULL, *bot2Tail = NULL;
 	Node *bot3Head = NULL, *bot3Tail = NULL;
 
+	// Player card variables
 	int playerCards;
 	int bot1Cards;
 	int bot2Cards;
@@ -647,7 +656,7 @@ int main() {
 				cardSave(cardHead, &linkedListTemp, rng1);
 
 				// Putting player cards
-				if (i % 4 == 0)
+				if (i % 4 == 0 && i < 6)
 					insertAtEnd(&playerHead, &playerTail, &playerCards, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
 
 				// Putting bot 1 cards
@@ -682,6 +691,12 @@ int main() {
 				// Check if the card is unvalid to be put in the discard pile
 				if (strcmp(linkedListTemp.type, "+4") == 0)
 					continue;
+
+				/*
+				linkedListTemp.number = -1;
+				strcpy(linkedListTemp.type, "Wild");
+				strcpy(linkedListTemp.color, "Black");
+				*/
 
 				// Putting a card
 				insertAtEnd(&discardHead, &discardTail, &discardPileCount, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
@@ -733,12 +748,6 @@ int main() {
 				// Displays the current card
 				if (tempBool) {
 					cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
-
-
-					//Tester
-					linkedListTemp.number = -1;
-					strcpy(linkedListTemp.type, "Wild");
-					strcpy(linkedListTemp.color, "Black");
 				}
 				else
 					tempBool = true;
@@ -839,6 +848,12 @@ int main() {
 					}
 					else if (strcmp(linkedListTemp.type, "Wild") == 0) {
 						doWild(turnCycle, playerTurn, &tempBool, &linkedListTemp);
+						if (discardPileCount <= 1)
+							deleteAtBeginning(&discardHead, &discardPileCount);
+						else 
+							deleteAtEnd(&discardHead, &discardTail, &discardPileCount);
+
+						insertAtEnd(&discardHead, &discardTail, &discardPileCount, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
 
 						roundZero = false;
 
@@ -846,49 +861,97 @@ int main() {
 					}
 				}
 
+				// Player's turn
 				if (turnCycle[playerTurn] == 1) {
 					// UI
 					printf("1. Input a card\n");
 					printf("2. Get a card from draw pile\n");
+
+					// Checks if the card can be inputted or not
+					cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
+					canInput = canInputCard(playerHead, linkedListTemp, playerCards);
 
 					do
 					{
 						printf("Your Choice : ");
 						scanf("%d", &gameWarp);
 						while (getchar() != '\n');
-					}
-					while (gameWarp != 1 && gameWarp != 2);
 
-					if (gameWarp == 1) {
-						do
-						{
-							// Resetter
-							validInput = false;
-
-							// UI
-							printf("Choose the amount of cards that you want to input : ");
-							scanf("%d", &cardAmountInput);
-							while (getchar() != '\n');
-
-							// If user inputs invalid value
-							if (cardAmountInput < 1 || cardAmountInput > playerCards) {
-								printf("Invalid Input\n");
-
-								continue;
-							}
-
-							// Checks the maximum amount of cards that can be inserted
-							
-
-							if (!validInput) {
-								printf("You can\'t input that much card\n");
+						if (gameWarp == 1) {
+							if (!canInput) {
+								printf("You can\'t input a card\n");
 
 								continue;
 							}
 							else
 								break;
 						}
-						while (true);
+						else if (gameWarp == 2)
+							break;
+						else
+							continue;
+					}
+					while (true);
+
+					if (gameWarp == 1) {
+						// Puts the card amount
+						validInput = true;
+
+						// UI
+						printf("Choose the amount of cards that you want to input : ");
+						scanf("%d", &cardAmountInput);
+						while (getchar() != '\n');
+
+						// If user inputs invalid value
+						if (cardAmountInput < 1 || cardAmountInput > playerCards) {
+							printf("Invalid Input\n");
+							validInput = false;
+
+							getchar();
+						}
+
+						if (!validInput)
+							continue;
+
+						// Inputs the card
+						printf("Choose the cards that you want to input:\n");
+
+						for (i = 0; i < cardAmountInput; i++)
+							scanf("%d", &cardPicks[i]);
+
+						while (getchar() != '\n');
+
+						// Checks if the card inputted is valid or not
+						validInput = true;
+
+						for (i = 0; i < cardAmountInput; i++) {
+							if (i == 0)
+								cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
+							else
+								cardSave(playerHead, &linkedListTemp, cardPicks[i - 1]);
+							
+							cardSave(playerHead, &linkedListTemp2, cardPicks[i]);
+
+							if (i == 0 && strcmp(linkedListTemp.type, linkedListTemp2.type) != 0 && strcmp(linkedListTemp.color, linkedListTemp2.color) != 0) {
+								validInput = false;
+
+								break;
+							}
+							else if (i != 0 && strcmp(linkedListTemp.type, linkedListTemp2.type) != 0) {
+								validInput = false;
+
+								break;
+							}
+						}
+
+						if (!validInput) {
+							printf("Invalid Input!");
+
+							continue;
+						}
+
+						printf("Done");
+						getchar();
 					}
 					else if (gameWarp == 2) {
 						// Pick a random card from draw pile
@@ -916,6 +979,8 @@ int main() {
 						getchar();
 					}
 				}
+
+				// Bot's turn
 				else {
 					printf("Press \'Enter\' for ");
 
@@ -1115,16 +1180,16 @@ void deleteAtEnd(Node** headRef, Node** tailRef, int* count) {
 	(*count)--;
 }
 
-void cardSave(Node* node, Temp1 *cardTemp, int index) {
+void cardSave(Node* node, Temp1 *linkedListTemp, int index) {
 	int i;
 
 	for (i = 0; i < index; i++)
 		node = node -> next;
 	
-	cardTemp -> cardNumber = node -> cardNumber;
-	cardTemp -> number = node -> number;
-	strcpy(cardTemp -> type, node -> type);
-	strcpy(cardTemp -> color, node -> color);
+	linkedListTemp -> cardNumber = node -> cardNumber;
+	linkedListTemp -> number = node -> number;
+	strcpy(linkedListTemp -> type, node -> type);
+	strcpy(linkedListTemp -> color, node -> color);
 }
 
 void printList(Node* node) {
@@ -1268,6 +1333,8 @@ void doWild(int turnCycle[], int playerTurn, bool *tempBoolPtr, Temp1 *linkedLis
 }
 
 void cardPrint(Temp1 linkedListTemp) {
+	//printf("%d %s %s\n", linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
+
 	// Chosen Wild
 	if (strcmp(linkedListTemp.color, "Black") != 0 && (strcmp(linkedListTemp.type, "Wild") == 0 || strcmp(linkedListTemp.type, "+4") == 0))
 		printf("%s (%s)", linkedListTemp.type, linkedListTemp.color);
@@ -1282,4 +1349,21 @@ void cardPrint(Temp1 linkedListTemp) {
 		else
 			printf("%s ", linkedListTemp.type);
 	}
+}
+
+bool canInputCard(Node* node, Temp1 linkedListTemp, int playerCards) {
+	int i;
+
+	//printf("%d %s %s\n\n", linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
+
+	for (i = 0; i < playerCards; i++) {
+		//printf("%d %s %s\n", node -> number, node -> type, node -> color);
+
+		if (node -> number == linkedListTemp.number || strcmp(node -> type, linkedListTemp.type) == 0 || strcmp(node -> color, linkedListTemp.color) == 0 || strcmp(node -> type, "Wild") == 0 || strcmp(node -> type, "+4") == 0)
+			return true;
+
+		node = node -> next;
+	}
+
+	return false;
 }
