@@ -944,6 +944,29 @@ int main() {
 						continue;
 					}
 					else if (strcmp(linkedListTemp.type, "Wild") == 0) {
+						// Cleans isBotHaveTheColor
+						for (i = 0; i < 4; i++)
+							isBotHaveTheColor[i] = false;
+						
+						// Checks if the bot have the color
+						for (i = 0; i < turnCycle[playerTurn] == 2 ? bot1Cards : (turnCycle[playerTurn] == 3 ? bot2Cards : bot3Cards); i++) {
+							if (turnCycle[playerTurn] == 2)
+								cardSave(bot1Head, &linkedListTemp2, i);
+							else if (turnCycle[playerTurn] == 3)
+								cardSave(bot2Head, &linkedListTemp2, i);
+							else if (turnCycle[playerTurn] == 4)
+								cardSave(bot3Head, &linkedListTemp2, i);
+							
+							if (strcmp(linkedListTemp2.color, "Blue") == 0)
+								isBotHaveTheColor[0] = true;
+							else if (strcmp(linkedListTemp2.color, "Red") == 0)
+								isBotHaveTheColor[1] = true;
+							else if (strcmp(linkedListTemp2.color, "Green") == 0)
+								isBotHaveTheColor[2] = true;
+							else if (strcmp(linkedListTemp2.color, "Yellow") == 0)
+								isBotHaveTheColor[3] = true;
+						}
+
 						doWild(turnCycle, playerTurn, &tempBool, &linkedListTemp, isBotHaveTheColor);
 
 						if (discardPileCount <= 1)
@@ -1600,11 +1623,11 @@ int main() {
 						cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
 
 						if (turnCycle[playerTurn] == 2)
-							rng2 = !canInputCard(bot1Head, linkedListTemp, bot1Cards) ? 1 : 0;
+							rng2 = canInputCard(bot1Head, linkedListTemp, bot1Cards) ? 0 : 1;
 						else if (turnCycle[playerTurn] == 3)
-							rng2 = !canInputCard(bot2Head, linkedListTemp, bot2Cards) ? 1 : 0;
+							rng2 = canInputCard(bot2Head, linkedListTemp, bot2Cards) ? 0 : 1;
 						else if (turnCycle[playerTurn] == 4)
-							rng2 = !canInputCard(bot3Head, linkedListTemp, bot3Cards) ? 1 : 0;
+							rng2 = canInputCard(bot3Head, linkedListTemp, bot3Cards) ? 0 : 1;
 
 						do
 						{							
@@ -1712,9 +1735,9 @@ int main() {
 								validInput = true;
 
 								// Inputs the card for the bot
-								for (i = 0; i < cardAmountInput; i++) {
-									cardPickDelete(cardPicks, cardPicksDeclaration);
+								cardPickDelete(cardPicks, cardPicksDeclaration);
 
+								for (i = 0; i < cardAmountInput; i++) {
 									if (turnCycle[playerTurn] == 2)
 										cardPicks[i] = rand() % bot1Cards;
 									else if (turnCycle[playerTurn] == 3)
