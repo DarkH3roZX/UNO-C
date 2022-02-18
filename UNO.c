@@ -106,6 +106,7 @@ int main() {
 	int gameWarp;
 	int botWarp;
 	int plusWarp;
+	int grabWarp;
 
 	// Declaration Variables
 	char startGameWord[16];
@@ -1560,7 +1561,23 @@ int main() {
 							cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
 
 							if (canInputCard(playerHead, linkedListTemp, playerCards)) {
+								printf("Do you wanna input the card?\n");
+								printf("1. Yes\n");
+								printf("2. No\n\n");
 								
+								do
+								{
+									printf("Your choice : ");
+									scanf("%d", &grabWarp);
+									while (getchar() != '\n');
+								}
+								while (grabWarp != 1 && grabWarp != 2);
+
+								if (grabWarp == 1) {
+									canTakeCard = false;
+
+									continue;
+								}
 							}
 						}
 					}
@@ -1582,24 +1599,12 @@ int main() {
 						// Checks if bot can input a card or no
 						cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
 
-						if (turnCycle[playerTurn] == 2) {
-							if (!canInputCard(bot1Head, linkedListTemp, bot1Cards))
-								rng2 = 1;
-							else
-								rng2 = 0;
-						}
-						else if (turnCycle[playerTurn] == 3) {
-							if (!canInputCard(bot2Head, linkedListTemp, bot2Cards))
-								rng2 = 1;
-							else
-								rng2 = 0;
-						}
-						else if (turnCycle[playerTurn] == 4) {
-							if (!canInputCard(bot3Head, linkedListTemp, bot3Cards))
-								rng2 = 1;
-							else
-								rng2 = 0;
-						}
+						if (turnCycle[playerTurn] == 2)
+							rng2 = !canInputCard(bot1Head, linkedListTemp, bot1Cards) ? 1 : 0;
+						else if (turnCycle[playerTurn] == 3)
+							rng2 = !canInputCard(bot2Head, linkedListTemp, bot2Cards) ? 1 : 0;
+						else if (turnCycle[playerTurn] == 4)
+							rng2 = !canInputCard(bot3Head, linkedListTemp, bot3Cards) ? 1 : 0;
 
 						do
 						{							
@@ -1703,9 +1708,7 @@ int main() {
 								
 								// cardAmountInput Calculator
 								cardSave(discardHead, &linkedListTemp2, discardPileCount - 1);
-
 								cardAmountInput = 1;
-
 								validInput = true;
 
 								// Inputs the card for the bot
@@ -1713,21 +1716,21 @@ int main() {
 									cardPickDelete(cardPicks, cardPicksDeclaration);
 
 									if (turnCycle[playerTurn] == 2)
-										cardPicks[0] = rand() % bot1Cards;
+										cardPicks[i] = rand() % bot1Cards;
 									else if (turnCycle[playerTurn] == 3)
-										cardPicks[0] = rand() % bot2Cards;
+										cardPicks[i] = rand() % bot2Cards;
 									else if (turnCycle[playerTurn] == 4)
-										cardPicks[0] = rand() % bot3Cards;
+										cardPicks[i] = rand() % bot3Cards;
 
 									// Checks if the card inputted is valid or not
 									cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
 									
 									if (turnCycle[playerTurn] == 2)
-										cardSave(bot1Head, &linkedListTemp2, cardPicks[0]);
+										cardSave(bot1Head, &linkedListTemp2, cardPicks[i]);
 									else if (turnCycle[playerTurn] == 3)
-										cardSave(bot2Head, &linkedListTemp2, cardPicks[0]);
+										cardSave(bot2Head, &linkedListTemp2, cardPicks[i]);
 									else if (turnCycle[playerTurn] == 4)
-										cardSave(bot3Head, &linkedListTemp2, cardPicks[0]);
+										cardSave(bot3Head, &linkedListTemp2, cardPicks[i]);
 									
 									if (!(strcmp(linkedListTemp2.color, linkedListTemp.color) == 0 || (strcmp(linkedListTemp2.type, linkedListTemp.type) == 0 && strcmp(linkedListTemp2.type, "Normal") != 0) || (linkedListTemp2.number == linkedListTemp.number && linkedListTemp2.number != -1) || strcmp(linkedListTemp2.type, "Wild") == 0 || strcmp(linkedListTemp2.type, "+4") == 0)) {
 										validInput = false;
@@ -1811,11 +1814,11 @@ int main() {
 									}
 									else {
 										if (turnCycle[playerTurn] == 2)
-											deleteAtMiddle(&bot1Head, &bot1Cards, cardPicks[0]);
+											deleteAtMiddle(&bot1Head, &bot1Cards, cardPicks[i]);
 										else if (turnCycle[playerTurn] == 3)
-											deleteAtMiddle(&bot2Head, &bot2Cards, cardPicks[0]);
+											deleteAtMiddle(&bot2Head, &bot2Cards, cardPicks[i]);
 										else if (turnCycle[playerTurn] == 4)
-											deleteAtMiddle(&bot3Head, &bot3Cards, cardPicks[0]);
+											deleteAtMiddle(&bot3Head, &bot3Cards, cardPicks[i]);
 									}
 								}
 
