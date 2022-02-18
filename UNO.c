@@ -73,7 +73,7 @@ void printList(Node* node);
 char * playerNumberToString(int x);
 void doReverse(bool *reverse);
 void doSkip(int *roundsPtr, int turnCycle[], int playerTurn, bool reversed);
-void doWild(int turnCycle[], int playerTurn, bool *tempBool, Temp1 *linkedListTemp, bool isBotHaveTheColor[]);
+void doWild(int turnCycle[], int playerTurn, Temp1 *linkedListTemp, bool isBotHaveTheColor[]);
 void cardPrint(Temp1 linkedListTemp);
 bool canInputCard(Node* node, Temp1 linkedListTemp, int playerCards);
 bool canAddAnotherPlus(Node* node, bool discardPlus4, int playerCards);
@@ -106,6 +106,7 @@ int main() {
 	int gameWarp;
 	int botWarp;
 	int plusWarp;
+	int grabWarp;
 
 	// Declaration Variables
 	char startGameWord[16];
@@ -114,7 +115,6 @@ int main() {
 	int tempInt;
 	char tempChar;
 	char tempString[100];
-	bool tempBool;
 	Temp1 linkedListTemp;
 	Temp1 linkedListTemp2;
 	
@@ -684,7 +684,6 @@ int main() {
 			bot3Cards = 0;
 			playersLeft = 4;
 			roundZero = true;
-			tempBool = true;
 			currPlus = 0;
 			inPlusCondition = false;
 			canTakeCard = true;
@@ -827,10 +826,7 @@ int main() {
 				}
 
 				// Displays the current card
-				if (tempBool)
-					cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
-				else
-					tempBool = true;
+				cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
 
 				printf("\nCurrent Card : ");
 				cardPrint(linkedListTemp);
@@ -943,7 +939,30 @@ int main() {
 						continue;
 					}
 					else if (strcmp(linkedListTemp.type, "Wild") == 0) {
-						doWild(turnCycle, playerTurn, &tempBool, &linkedListTemp, isBotHaveTheColor);
+						// Cleans isBotHaveTheColor
+						for (i = 0; i < 4; i++)
+							isBotHaveTheColor[i] = false;
+						
+						// Checks if the bot have the color
+						for (i = 0; i < turnCycle[playerTurn] == 2 ? bot1Cards : (turnCycle[playerTurn] == 3 ? bot2Cards : bot3Cards); i++) {
+							if (turnCycle[playerTurn] == 2)
+								cardSave(bot1Head, &linkedListTemp2, i);
+							else if (turnCycle[playerTurn] == 3)
+								cardSave(bot2Head, &linkedListTemp2, i);
+							else if (turnCycle[playerTurn] == 4)
+								cardSave(bot3Head, &linkedListTemp2, i);
+							
+							if (strcmp(linkedListTemp2.color, "Blue") == 0)
+								isBotHaveTheColor[0] = true;
+							else if (strcmp(linkedListTemp2.color, "Red") == 0)
+								isBotHaveTheColor[1] = true;
+							else if (strcmp(linkedListTemp2.color, "Green") == 0)
+								isBotHaveTheColor[2] = true;
+							else if (strcmp(linkedListTemp2.color, "Yellow") == 0)
+								isBotHaveTheColor[3] = true;
+						}
+
+						doWild(turnCycle, playerTurn, &linkedListTemp, isBotHaveTheColor);
 
 						if (discardPileCount <= 1)
 							deleteAtBeginning(&discardHead, &discardPileCount);
@@ -1076,7 +1095,7 @@ int main() {
 									else if (strcmp(linkedListTemp.type, "+4") == 0) {
 										currPlus += 4;
 
-										doWild(turnCycle, playerTurn, &tempBool, &linkedListTemp, isBotHaveTheColor);
+										doWild(turnCycle, playerTurn, &linkedListTemp, isBotHaveTheColor);
 										
 										// Replaces The Discard Pile Wild
 										if (discardPileCount <= 1)
@@ -1247,13 +1266,15 @@ int main() {
 								else {
 									currPlus += 4;
 
-									doWild(turnCycle, playerTurn, &tempBool, &linkedListTemp, isBotHaveTheColor);
+									doWild(turnCycle, playerTurn, &linkedListTemp, isBotHaveTheColor);
 										
 									// Replaces The Discard Pile Wild
 									if (discardPileCount <= 1)
 										deleteAtBeginning(&discardHead, &discardPileCount);
 									else 
 										deleteAtEnd(&discardHead, &discardTail, &discardPileCount);
+									
+									insertAtEnd(&discardHead, &discardTail, &discardPileCount, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
 								}
 
 								// Deletes the card from bot's pile
@@ -1504,7 +1525,7 @@ int main() {
 											inPlusCondition = true;
 										}
 
-										doWild(turnCycle, playerTurn, &tempBool, &linkedListTemp, isBotHaveTheColor);
+										doWild(turnCycle, playerTurn, &linkedListTemp, isBotHaveTheColor);
 										
 										// Replaces The Discard Pile Wild
 										if (discardPileCount <= 1)
@@ -1560,7 +1581,23 @@ int main() {
 							cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
 
 							if (canInputCard(playerHead, linkedListTemp, playerCards)) {
+								printf("Do you wanna input the card?\n");
+								printf("1. Yes\n");
+								printf("2. No\n\n");
 								
+								do
+								{
+									printf("Your choice : ");
+									scanf("%d", &grabWarp);
+									while (getchar() != '\n');
+								}
+								while (grabWarp != 1 && grabWarp != 2);
+
+								if (grabWarp == 1) {
+									canTakeCard = false;
+
+									continue;
+								}
 							}
 						}
 					}
@@ -1582,24 +1619,12 @@ int main() {
 						// Checks if bot can input a card or no
 						cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
 
-						if (turnCycle[playerTurn] == 2) {
-							if (!canInputCard(bot1Head, linkedListTemp, bot1Cards))
-								rng2 = 1;
-							else
-								rng2 = 0;
-						}
-						else if (turnCycle[playerTurn] == 3) {
-							if (!canInputCard(bot2Head, linkedListTemp, bot2Cards))
-								rng2 = 1;
-							else
-								rng2 = 0;
-						}
-						else if (turnCycle[playerTurn] == 4) {
-							if (!canInputCard(bot3Head, linkedListTemp, bot3Cards))
-								rng2 = 1;
-							else
-								rng2 = 0;
-						}
+						if (turnCycle[playerTurn] == 2)
+							rng2 = canInputCard(bot1Head, linkedListTemp, bot1Cards) ? 0 : 1;
+						else if (turnCycle[playerTurn] == 3)
+							rng2 = canInputCard(bot2Head, linkedListTemp, bot2Cards) ? 0 : 1;
+						else if (turnCycle[playerTurn] == 4)
+							rng2 = canInputCard(bot3Head, linkedListTemp, bot3Cards) ? 0 : 1;
 
 						do
 						{							
@@ -1703,31 +1728,31 @@ int main() {
 								
 								// cardAmountInput Calculator
 								cardSave(discardHead, &linkedListTemp2, discardPileCount - 1);
-
 								cardAmountInput = 1;
-
 								validInput = true;
 
 								// Inputs the card for the bot
-								for (i = 0; i < cardAmountInput; i++) {
-									cardPickDelete(cardPicks, cardPicksDeclaration);
+								cardPickDelete(cardPicks, cardPicksDeclaration);
 
+								printf("Bot %d inputs:\n", turnCycle[playerTurn] - 1);
+
+								for (i = 0; i < cardAmountInput; i++) {
 									if (turnCycle[playerTurn] == 2)
-										cardPicks[0] = rand() % bot1Cards;
+										cardPicks[i] = rand() % bot1Cards;
 									else if (turnCycle[playerTurn] == 3)
-										cardPicks[0] = rand() % bot2Cards;
+										cardPicks[i] = rand() % bot2Cards;
 									else if (turnCycle[playerTurn] == 4)
-										cardPicks[0] = rand() % bot3Cards;
+										cardPicks[i] = rand() % bot3Cards;
 
 									// Checks if the card inputted is valid or not
 									cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
 									
 									if (turnCycle[playerTurn] == 2)
-										cardSave(bot1Head, &linkedListTemp2, cardPicks[0]);
+										cardSave(bot1Head, &linkedListTemp2, cardPicks[i]);
 									else if (turnCycle[playerTurn] == 3)
-										cardSave(bot2Head, &linkedListTemp2, cardPicks[0]);
+										cardSave(bot2Head, &linkedListTemp2, cardPicks[i]);
 									else if (turnCycle[playerTurn] == 4)
-										cardSave(bot3Head, &linkedListTemp2, cardPicks[0]);
+										cardSave(bot3Head, &linkedListTemp2, cardPicks[i]);
 									
 									if (!(strcmp(linkedListTemp2.color, linkedListTemp.color) == 0 || (strcmp(linkedListTemp2.type, linkedListTemp.type) == 0 && strcmp(linkedListTemp2.type, "Normal") != 0) || (linkedListTemp2.number == linkedListTemp.number && linkedListTemp2.number != -1) || strcmp(linkedListTemp2.type, "Wild") == 0 || strcmp(linkedListTemp2.type, "+4") == 0)) {
 										validInput = false;
@@ -1780,7 +1805,7 @@ int main() {
 												inPlusCondition = true;
 											}
 
-											doWild(turnCycle, playerTurn, &tempBool, &linkedListTemp2, isBotHaveTheColor);
+											doWild(turnCycle, playerTurn, &linkedListTemp2, isBotHaveTheColor);
 											
 											// Replaces The Discard Pile Wild
 											if (discardPileCount <= 1)
@@ -1811,18 +1836,21 @@ int main() {
 									}
 									else {
 										if (turnCycle[playerTurn] == 2)
-											deleteAtMiddle(&bot1Head, &bot1Cards, cardPicks[0]);
+											deleteAtMiddle(&bot1Head, &bot1Cards, cardPicks[i]);
 										else if (turnCycle[playerTurn] == 3)
-											deleteAtMiddle(&bot2Head, &bot2Cards, cardPicks[0]);
+											deleteAtMiddle(&bot2Head, &bot2Cards, cardPicks[i]);
 										else if (turnCycle[playerTurn] == 4)
-											deleteAtMiddle(&bot3Head, &bot3Cards, cardPicks[0]);
+											deleteAtMiddle(&bot3Head, &bot3Cards, cardPicks[i]);
 									}
+
+									cardPrint(linkedListTemp2);
+									puts("");
 								}
 
 								if (!validInput)
 									continue;
 
-								printf("\nBot %d puts a card, Press \'Enter\' to conntinue", turnCycle[playerTurn] - 1);
+								printf("\nPress \'Enter\' to conntinue", turnCycle[playerTurn] - 1);
 								getchar();
 							}
 
@@ -2157,7 +2185,7 @@ void doSkip(int *roundsPtr, int turnCycle[], int playerTurn, bool reversed) {
 		(*roundsPtr)++;
 }
 
-void doWild(int turnCycle[], int playerTurn, bool *tempBoolPtr, Temp1 *linkedListTempPtr, bool isBotHaveTheColor[]) {
+void doWild(int turnCycle[], int playerTurn, Temp1 *linkedListTempPtr, bool isBotHaveTheColor[]) {
 	int colorPicker;
 
 	char wildCardInput[7];
@@ -2178,74 +2206,32 @@ void doWild(int turnCycle[], int playerTurn, bool *tempBoolPtr, Temp1 *linkedLis
 			while (getchar() != '\n');
 		} 
 		while (colorPicker != 1 && colorPicker != 2 && colorPicker != 3 && colorPicker != 4);
-
-		// Prints name
-		printf("You chose ");
-
-		// Prints color
-		if (colorPicker == 1) {
-			strcpy(wildCardInput, "Blue");
-			printf("Blue");
-		}
-		else if (colorPicker == 2) {
-			strcpy(wildCardInput, "Red");
-			printf("Red");
-		}
-		else if (colorPicker == 3) {
-			strcpy(wildCardInput, "Green");
-			printf("Green");
-		}
-		else if (colorPicker == 4) {
-			strcpy(wildCardInput, "Yellow");
-			printf("Yellow");
-		}
 	}
 
 	// If the turn is bot's
 	else {
 		do
 		{
-			colorPicker = rand() % 4;
+			colorPicker = rand() % 4 + 1;
 
 			if (isBotHaveTheColor[colorPicker])
 				break;
 		}
 		while (true);
-		
-		// Prints name
-		if (turnCycle[playerTurn] == 2)
-			printf("Bot 1 chooses ");
-		else if (turnCycle[playerTurn] == 3)
-			printf("Bot 2 chooses ");
-		else if (turnCycle[playerTurn] == 4)
-			printf("Bot 3 chooses ");
-		
-		// Prints color
-		if (colorPicker == 0) {
-			strcpy(wildCardInput, "Blue");
-			printf("Blue");
-		}
-		else if (colorPicker == 1) {
-			strcpy(wildCardInput, "Red");
-			printf("Red");
-		}
-		else if (colorPicker == 2) {
-			strcpy(wildCardInput, "Green");
-			printf("Green");
-		}
-		else if (colorPicker == 3) {
-			strcpy(wildCardInput, "Yellow");
-			printf("Yellow");
-		}
 	}
 
-	printf(", Press \'Enter\' To Continue");
-	getchar();
+	// Changes the color
+	if (colorPicker == 1)
+		strcpy(wildCardInput, "Blue");
+	else if (colorPicker == 2)
+		strcpy(wildCardInput, "Red");
+	else if (colorPicker == 3)
+		strcpy(wildCardInput, "Green");
+	else if (colorPicker == 4)
+		strcpy(wildCardInput, "Yellow");
 
 	// Changes the color of the wild card
 	strcpy(linkedListTempPtr -> color, wildCardInput);
-
-	*tempBoolPtr = false;
 }
 
 void cardPrint(Temp1 linkedListTemp) {
