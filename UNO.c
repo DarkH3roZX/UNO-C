@@ -1737,6 +1737,8 @@ int main() {
 								// Inputs the card for the bot
 								cardPickDelete(cardPicks, cardPicksDeclaration);
 
+								printf("Bot %d inputs:\n", turnCycle[playerTurn] - 1);
+
 								for (i = 0; i < cardAmountInput; i++) {
 									if (turnCycle[playerTurn] == 2)
 										cardPicks[i] = rand() % bot1Cards;
@@ -1843,12 +1845,15 @@ int main() {
 										else if (turnCycle[playerTurn] == 4)
 											deleteAtMiddle(&bot3Head, &bot3Cards, cardPicks[i]);
 									}
+
+									cardPrint(linkedListTemp2);
+									puts("");
 								}
 
 								if (!validInput)
 									continue;
 
-								printf("\nBot %d puts a card, Press \'Enter\' to conntinue", turnCycle[playerTurn] - 1);
+								printf("\nPress \'Enter\' to conntinue", turnCycle[playerTurn] - 1);
 								getchar();
 							}
 
