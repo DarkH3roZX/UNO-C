@@ -1096,12 +1096,6 @@ int main() {
 										currPlus += 4;
 
 										doWild(turnCycle, playerTurn, &linkedListTemp, isBotHaveTheColor);
-										
-										// Replaces The Discard Pile Wild
-										if (discardPileCount <= 1)
-											deleteAtBeginning(&discardHead, &discardPileCount);
-										else 
-											deleteAtEnd(&discardHead, &discardTail, &discardPileCount);
 									}
 
 									// Puts a card into a draw pile
@@ -1633,7 +1627,7 @@ int main() {
 								/*
 								Card Amount Input Counter
 								*/
-								
+
 								// Empties typeAmounts
 								for (i = 0; i < 15; i++)
 									typeAmounts[i] = 0;
