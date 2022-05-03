@@ -1563,7 +1563,7 @@ int main() {
 							}
 							while (true);
 
-							if (!validInput) {
+							if (!validInput || cardAmountInput < 1) {
 								printf("Invalid Input!");
 								getchar();
 
@@ -1869,12 +1869,8 @@ int main() {
 										cardSave(bot3Head, &linkedListTemp, cardPicks[i]);
 
 									cardPrint(linkedListTemp);
-
-									if (i != cardAmountInput - 1)
-										puts("");
+									puts("");
 								}
-
-								getchar();
 
 								// Fixes the cardPicks index
 								for (i = 0; i < cardAmountInput; i++) {
@@ -2027,7 +2023,7 @@ int main() {
 								if (!validInput)
 									continue;
 
-								printf("\nPress \'Enter\' to conntinue");
+								printf("\nPress \'Enter\' to continue");
 								getchar();
 							}
 
