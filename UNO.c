@@ -27,7 +27,7 @@ typedef struct {
 
 	char type[8];
 	char color[8];
-} Temp1;
+} CardData;
 
 // Player Status
 typedef struct {
@@ -68,14 +68,14 @@ void insertAtEnd(Node** headRef, Node** tailRef, int* count, int cardNum, int nu
 void deleteAtBeginning(Node** headRef, int* count);
 void deleteAtMiddle(Node** headRef, int* count, int index);
 void deleteAtEnd(Node** headRef, Node** tailRef, int* count);
-void cardSave(Node* node, Temp1 *linkedListTemp, int index);
+void cardSave(Node* node, CardData *linkedListTemp, int index);
 void printList(Node* node);
 char * playerNumberToString(int x);
 void doReverse(bool *reverse);
-void doSkip(int *roundsPtr, int turnCycle[], int playerTurn, bool reversed);
-void doWild(int turnCycle[], int playerTurn, Temp1 *linkedListTemp, bool isBotHaveTheColor[]);
-void cardPrint(Temp1 linkedListTemp);
-bool canInputCard(Node* node, Temp1 linkedListTemp, int playerCards);
+void doSkip(int turnCycle[], int playerTurn, bool reversed);
+void doWild(int turnCycle[], int playerTurn, CardData *linkedListTemp, bool isBotHaveTheColor[]);
+void cardPrint(CardData linkedListTemp);
+bool canInputCard(Node* node, CardData linkedListTemp, int playerCards);
 bool canAddAnotherPlus(Node* node, bool discardPlus4, int playerCards);
 void cardPickDelete(int *cardPicks, int *cardPicksDeclaration);
 void totalColorsDelete(int *totalColors);
@@ -88,6 +88,7 @@ int main() {
 
 	// File Pointers
 	FILE *cards; // Card file
+	FILE *statsFile; // Stats file
 
 	// Card Deck Variables
 	Node *cardHead = NULL, *cardTail = NULL;
@@ -113,10 +114,16 @@ int main() {
 
 	// Temporary Variables;
 	int tempInt;
+
 	char tempChar;
 	char tempString[100];
-	Temp1 linkedListTemp;
-	Temp1 linkedListTemp2;
+	char tempColor[7];
+
+	CardData linkedListTemp;
+	CardData linkedListTemp2;
+	CardData linkedListTemp3;
+	CardData linkedListTemp4;
+	CardData linkedListTemp5;
 	
 	// Rock Paper Scissors Variables
 	int winnerRPS;
@@ -133,10 +140,10 @@ int main() {
 	int playerTurn;
 	int cardAmountInput;
 	int currPlus;
-	int currMinus;
 	int playersLeft;
 	int turnCycle[4];
 	int cardPicks[8];
+	int stats[4];
 
 	char podiumPlaceNames[4][7];
 
@@ -153,15 +160,16 @@ int main() {
 	int botTotalPlus2;
 	int botTotalPlus4;
 	int biggestAmount;
-	int cardNameInt;
-	int totalColors[5];
-	int typeAmounts[15];
-	int wildCardAmount[2];
-	int cardAmount[4][13];
+	int wildSkipAnyDeclaration[3];
 
-	bool isBotWantToStack;
-	bool isSomeoneInUNO;
+	bool isBotWantToStackWithPlus4;
+	bool botPutACard;
+	bool isDoneChecking;
+	bool isContinue;
+	bool isSameColor;
 	bool isBotHaveTheColor[4];
+
+	CardData bot2Temp[3];
 
 	// Validation Variables
 	int maxCardAllowed;
@@ -228,6 +236,24 @@ int main() {
 
 	fclose(cards);
 
+	// Creates new file if there is no file found
+	statsFile = fopen("stats.evan", "rb");
+
+	if (statsFile == NULL) {
+		fclose(statsFile);
+		statsFile = fopen("stats.evan", "wb");
+
+		tempInt = 0;
+
+		for (i = 0; i < 4; i++)
+			fwrite(&tempInt, sizeof(int), 1, statsFile);
+	}
+
+	for (i = 0; i < 4; i++)
+		fread(&stats[i], sizeof(stats[i]), 1, statsFile);
+
+	fclose(statsFile);
+
 	//printList(cardHead);
 	//getchar();
 
@@ -249,13 +275,14 @@ int main() {
 			printf("1. Play UNO\n");
 			printf("2. How To Play\n");
 			printf("3. Credits\n");
-			printf("4. Exit\n\n");
+			printf("4. Stats\n");
+			printf("5. Exit\n\n");
 			
 			printf("Your Choice : ");
 			scanf("%d", &mainWarp);
 			while (getchar() != '\n');
 		}
-		while (mainWarp != 1 && mainWarp != 2 && mainWarp != 3 && mainWarp != 4);
+		while (mainWarp != 1 && mainWarp != 2 && mainWarp != 3 && mainWarp != 4 && mainWarp != 5);
 
 		// Play Game
 		if (mainWarp == 1) {
@@ -554,7 +581,7 @@ int main() {
 			}
 			while (true);
 			
-			//RPS Round 4 (Winner vs Winner)
+			// RPS Round 4 (Winner vs Winner)
 			do
 			{
 				// If player Wins Round 1
@@ -589,7 +616,7 @@ int main() {
 					system("cls");
 					logo();
 
-					rpsUI(3);
+					rpsUI(4);
 
 					printf("Bot %d\n", winnersRPS[0] - 1);
 					printf("Vs.\n");
@@ -684,6 +711,7 @@ int main() {
 			bot3Cards = 0;
 			playersLeft = 4;
 			roundZero = true;
+			botPutACard = false;
 			currPlus = 0;
 			inPlusCondition = false;
 			canTakeCard = true;
@@ -740,9 +768,9 @@ int main() {
 
 				/*
 				linkedListTemp.number = -1;
-				strcpy(linkedListTemp.type, "Reverse");
-				strcpy(linkedListTemp.color, "Blue");
-				*/				
+				strcpy(linkedListTemp.type, "Wild");
+				strcpy(linkedListTemp.color, "Black");
+				*/			
 
 				// Putting a card
 				insertAtEnd(&discardHead, &discardTail, &discardPileCount, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
@@ -799,6 +827,84 @@ int main() {
 					break;
 				}
 
+				// Bot 2 AI
+				if (turnCycle[playerTurn] == 3 && playersLeft == 2) {
+					// Saves the card value
+					cardSave(bot2Head, &linkedListTemp, 0); // 1st index
+					cardSave(bot2Head, &linkedListTemp2, 1); // 2nd index
+					cardSave(discardHead, &linkedListTemp4, discardPileCount - 1); // Discard Pile Check
+
+					// 2 Card Logic
+					if (bot2Cards == 2 && ((strcmp(linkedListTemp.color, "Black") == 0 && strcmp(linkedListTemp2.color, linkedListTemp4.color) == 0) || strcmp(linkedListTemp2.color, "Black") == 0)) {
+						cardSave(bot2Head, &linkedListTemp5, 0);
+						deleteAtBeginning(&bot2Head, &bot2Cards);
+						insertAtEnd(&bot2Head, &bot2Tail, &bot2Cards, linkedListTemp5.cardNumber, linkedListTemp5.number, linkedListTemp5.type, linkedListTemp5.color);
+					}
+
+					// 3 Card Logic
+					else if (bot2Cards == 3) {
+						cardSave(bot2Head, &linkedListTemp3, 2); // 3rd index
+						// Cleans wildSkipAnyDeclaration
+						for (i = 0; i < 3; i++)
+							wildSkipAnyDeclaration[i] = 0;
+
+						strcpy(tempColor, "x");
+						isSameColor = false;
+
+						for (i = 0; i < 3; i++) {
+							cardSave(bot2Head, &bot2Temp[i], i);
+
+							if (strcmp(bot2Temp[i].type, "+4") != 0)
+								strcpy(tempColor, bot2Temp[i].color);
+							else if (strcmp(tempColor, "x") != 0 && strcmp(bot2Temp[i].type, "+4") != 0 && strcmp(tempColor, bot2Temp[i].color) == 0)
+								isSameColor = true;
+
+							if (strcmp(bot2Temp[i].type, "+4") == 0)
+								wildSkipAnyDeclaration[0]++;
+							else if (strcmp(bot2Temp[i].type, "Skip") == 0)
+								wildSkipAnyDeclaration[1]++;
+							else
+								wildSkipAnyDeclaration[2]++;
+						}
+
+						if (wildSkipAnyDeclaration[0] == 1 && wildSkipAnyDeclaration[1] == 1 && wildSkipAnyDeclaration[2] == 1 && isSameColor) {
+							// Cleans bot 2 deck
+							for (i = 0; i < 3; i++)
+								deleteAtBeginning(&bot2Head, &bot2Cards);
+							
+							for (i = 0; i < 3; i++) {
+								if (i == 0) {
+									for (j = 0; j < 3; j++) {
+										if (strcmp(bot2Temp[j].type, "+4") == 0) {
+											insertAtEnd(&bot2Head, &bot2Tail, &bot2Cards, bot2Temp[j].cardNumber, bot2Temp[j].number, bot2Temp[j].type, bot2Temp[j].color);
+
+											break;
+										}
+									}
+								}
+								else if (i == 1) {
+									for (j = 0; j < 3; j++) {
+										if (strcmp(bot2Temp[j].type, "Skip") == 0) {
+											insertAtEnd(&bot2Head, &bot2Tail, &bot2Cards, bot2Temp[j].cardNumber, bot2Temp[j].number, bot2Temp[j].type, bot2Temp[j].color);
+
+											break;
+										}
+									}
+								}
+								else if (i == 2) {
+									for (j = 0; j < 3; j++) {
+										if (strcmp(bot2Temp[j].type, "Skip") != 0 && strcmp(bot2Temp[j].type, "+4") == 0) {
+											insertAtEnd(&bot2Head, &bot2Tail, &bot2Cards, bot2Temp[j].cardNumber, bot2Temp[j].number, bot2Temp[j].type, bot2Temp[j].color);
+
+											break;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
 				// Logo Input
 				system("cls");
 				logo();
@@ -822,6 +928,12 @@ int main() {
 					if (playerStats[turnCycle[i] - 1].isAlreadyWin)
 						printf("(UNO GAME!)");
 					
+					if ((turnCycle[i] == 1 && playerCards == 1) ||
+						(turnCycle[i] == 2 && bot1Cards == 1) ||
+						(turnCycle[i] == 3 && bot2Cards == 1) ||
+						(turnCycle[i] == 4 && bot3Cards == 1))
+						printf("(UNO!)");
+					
 					puts("");
 				}
 
@@ -833,41 +945,35 @@ int main() {
 				puts("");
 
 				// Displays the cards
-				printf("\n Cards \n");
+				printf("\n Cards \n", drawPileCount);
 				printf("=======\n");
 
 				// Prints the amount of bot 1 cards
 				printf("\nBot 1 : ");
 
-				/*
 				for (i = 0; i < bot1Cards; i++)
 					printf("[] ");
-				*/
-
-				puts("");
-				printList(bot1Head);
+				
+				//puts("");
+				//printList(bot1Head);
 				
 				// Prints the amount of bot 2 cards
 				printf("\nBot 2 : ");
 
-				/*
 				for (i = 0; i < bot2Cards; i++)
 					printf("[] ");
-				*/
 				
-				puts("");
-				printList(bot2Head);
+				//puts("");
+				//printList(bot2Head);
 				
 				// Prints the amount of bot 3 cards
 				printf("\nBot 3 : ");
 
-				/*
 				for (i = 0; i < bot3Cards; i++)
 					printf("[] ");
-				*/
 
-				puts("");
-				printList(bot3Head);
+				//puts("");
+				//printList(bot3Head);
 				
 				puts("\n");
 
@@ -881,7 +987,9 @@ int main() {
 						roundZero = false;
 					}
 					else if (strcmp(linkedListTemp.type, "Skip") == 0) {
-						doSkip(&rounds, turnCycle, playerTurn, reversed);
+						doSkip(turnCycle, playerTurn, reversed);
+						rounds++;
+
 						roundZero = false;
 
 						continue;
@@ -944,7 +1052,7 @@ int main() {
 							isBotHaveTheColor[i] = false;
 						
 						// Checks if the bot have the color
-						for (i = 0; i < turnCycle[playerTurn] == 2 ? bot1Cards : (turnCycle[playerTurn] == 3 ? bot2Cards : bot3Cards); i++) {
+						for (i = 0; i < (turnCycle[playerTurn] == 2 ? bot1Cards : (turnCycle[playerTurn] == 3 ? bot2Cards : (turnCycle[playerTurn] == 4 ? bot3Cards : 0))); i++) {
 							if (turnCycle[playerTurn] == 2)
 								cardSave(bot1Head, &linkedListTemp2, i);
 							else if (turnCycle[playerTurn] == 3)
@@ -1009,45 +1117,37 @@ int main() {
 							
 							// Stack It
 							if (plusWarp == 1) {
-								// Puts the card amount
 								validInput = true;
+								cardAmountInput = 0;
 
 								// UI
-								printf("Choose the amount of cards that you want to input : ");
-								scanf("%d", &cardAmountInput);
-								while (getchar() != '\n');
-
-								// If user inputs invalid value
-								if (cardAmountInput < 1 || cardAmountInput > playerCards) {
-									printf("Invalid Input\n");
-									validInput = false;
-
-									getchar();
-
-									continue;
-								}
+								printf("Input the cards (Press 'Enter' -> 'Ctrl + Z' -> 'Enter' when you're done):\n");
 
 								cardPickDelete(cardPicks, cardPicksDeclaration);
 
-								// Inputs the card
-								printf("Choose the cards that you want to input:\n");
+								do
+								{
+									if (scanf("%d", &cardPicks[cardAmountInput]) != 1)
+										break;
+									
+									cardPicks[cardAmountInput]--;
+									cardPicksDeclaration[cardAmountInput] = cardPicks[cardAmountInput];
+									
+									for (i = 0; i < cardAmountInput; i++) {
+										if (cardPicks[cardAmountInput] == cardPicksDeclaration[i]) {
+											validInput = false;
 
-								for (i = 0; i < cardAmountInput; i++) {
-									scanf("%d", &cardPicks[i]);
-									cardPicks[i]--;
+											break;
+										}
+									}
 
-									cardPicksDeclaration[cardPicks[i]]++;
+									cardAmountInput++;
 
-									// Checks so the player can't input the same card
-									if (cardPicksDeclaration[cardPicks[i]] > 1)
-										validInput = false;
+									while (getchar() != '\n');
 								}
-
-								while (getchar() != '\n');
+								while (true);
 
 								// Fixes the card index
-								currMinus = 0;
-
 								for (i = 0; i < cardAmountInput; i++) {
 									tempInt = cardPicks[i];
 
@@ -1089,6 +1189,8 @@ int main() {
 
 								// Puts a card into a discard pile
 								for (i = 0; i < cardAmountInput; i++) {
+									cardSave(playerHead, &linkedListTemp, cardPicks[i]);
+
 									// Adds the current plus
 									if (strcmp(linkedListTemp.type, "+2") == 0)
 										currPlus += 2;
@@ -1096,10 +1198,17 @@ int main() {
 										currPlus += 4;
 
 										doWild(turnCycle, playerTurn, &linkedListTemp, isBotHaveTheColor);
+
+										// Replaces The Discard Pile Wild
+										if (discardPileCount <= 1)
+											deleteAtBeginning(&discardHead, &discardPileCount);
+										else 
+											deleteAtEnd(&discardHead, &discardTail, &discardPileCount);
+										
+										insertAtEnd(&discardHead, &discardTail, &discardPileCount, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
 									}
 
 									// Puts a card into a draw pile
-									cardSave(playerHead, &linkedListTemp, cardPicks[i]);
 									insertAtEnd(&discardHead, &discardTail, &discardPileCount, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
 
 									// Deletes the card from player's pile
@@ -1153,8 +1262,12 @@ int main() {
 
 					// Bot's Turn
 					else {
-						isBotWantToStack = false;
-						isSomeoneInUNO = false;
+						isBotWantToStackWithPlus4 = false;
+
+						if (strcmp(linkedListTemp2.type, "+4") == 0)
+							discardPlus4 = true;
+						else
+							discardPlus4 = false;
 
 						// Checks if the bot can stack a plus card or not
 						if (turnCycle[playerTurn] == 2)
@@ -1164,13 +1277,7 @@ int main() {
 						else if (turnCycle[playerTurn] == 4)
 							canInputPlusCard = canAddAnotherPlus(bot3Head, discardPlus4, bot3Cards);
 						
-						// Condition if there's a player who have 1 card left, so the bot will add the plus card
-						if (playerCards == 1 || bot1Cards == 1 || bot2Cards == 1 || bot3Cards == 1) {
-							isBotWantToStack = true;
-							isSomeoneInUNO = true;
-						}
-						
-						// Counts the plus card that the bot have
+						// Counts the amount of plus card that the bot have
 						botTotalPlus2 = 0;
 						botTotalPlus4 = 0;
 
@@ -1188,114 +1295,160 @@ int main() {
 								botTotalPlus4++;
 						}
 
-						// If the plus is already too big, then the bot will put a card
-						if (botTotalPlus2 > 0 || (botTotalPlus4 > 0 && currPlus > 4))
-							isBotWantToStack = true;
-						
-						// Decides whether the bot will put a +4 or not
-						if ((botTotalPlus2 == 0 && botTotalPlus4 > 0 && currPlus > 4) || (isSomeoneInUNO && botTotalPlus4 > 0))
-							discardPlus4 = true;
+						// Case if the next player is in UNO
+						if (reversed) {
+							if (playerTurn == 0) {
+								if ((turnCycle[3] == 1 && playerCards == 1) ||
+								(turnCycle[3] == 2 && bot1Cards == 1) ||
+								(turnCycle[3] == 3 && bot2Cards == 1) ||
+								(turnCycle[3] == 4 && bot3Cards == 1))
+								isBotWantToStackWithPlus4 = true;
+							}
+							else {
+								if ((turnCycle[playerTurn - 1] == 1 && playerCards == 1) ||
+								(turnCycle[playerTurn - 1] == 2 && bot1Cards == 1) ||
+								(turnCycle[playerTurn - 1] == 3 && bot2Cards == 1) ||
+								(turnCycle[playerTurn - 1] == 4 && bot3Cards == 1))
+								isBotWantToStackWithPlus4 = true;
+							}
+						}
+						else {
+							if ((turnCycle[(playerTurn + 1) % 4] == 1 && playerCards == 1) ||
+								(turnCycle[(playerTurn + 1) % 4] == 2 && bot1Cards == 1) ||
+								(turnCycle[(playerTurn + 1) % 4] == 3 && bot2Cards == 1) ||
+								(turnCycle[(playerTurn + 1) % 4] == 4 && bot3Cards == 1))
+								isBotWantToStackWithPlus4 = true;
+						}
 
-						// Decides the bot choice
-						botWarp = isBotWantToStack && canInputPlusCard ? 0 : 1;
+						// Condition if the plus is only 2 or the plus is alr too many
+						if (botTotalPlus2 > 0 || (botTotalPlus4 > 0 && currPlus > 4))
+							isBotWantToStackWithPlus4 = true;
+						
+						// Condition if the topmost dicard pile is +4
+						if (discardPlus4)
+							isBotWantToStackWithPlus4 = true;
+						
+						if (botTotalPlus4 == 0)
+							isBotWantToStackWithPlus4 = false;
+						
+						// Determines the botWarp
+						botWarp = canInputPlusCard ? 0 : 1;
 						
 						// Stack It
 						if (botWarp == 0) {
-							// This code decides the amount of plus cards the bot will input
-							if (!discardPlus4 && 16 - botTotalPlus2 * 2 == currPlus)
-								cardAmountInput = botTotalPlus2;
-							else
-								cardAmountInput = 1;
+							// Empties cardPicks
+							cardPickDelete(cardPicks, cardPicksDeclaration);
+
+							// Checks the discard pile
+							cardSave(discardHead, &linkedListTemp2, discardPileCount - 1);
 
 							// Inputs cardPicks
-							tempInt = 0;
-
-							for (i = 0; i < playerCards; i++) {
+							for (i = 0; i < (turnCycle[playerTurn] == 2 ? bot1Cards : (turnCycle[playerTurn] == 3 ? bot2Cards : bot3Cards)); i++) {
 								if (turnCycle[playerTurn] == 2)
-									cardSave(bot1Head, &linkedListTemp, cardPicks[i]);
+									cardSave(bot1Head, &linkedListTemp, i);
 								else if (turnCycle[playerTurn] == 3)
-									cardSave(bot2Head, &linkedListTemp, cardPicks[i]);
+									cardSave(bot2Head, &linkedListTemp, i);
 								else if (turnCycle[playerTurn] == 4)
-									cardSave(bot3Head, &linkedListTemp, cardPicks[i]);
+									cardSave(bot3Head, &linkedListTemp, i);
+								
+								if ((strcmp(linkedListTemp.type, "+4") == 0 && isBotWantToStackWithPlus4) ||
+									(strcmp(linkedListTemp.type, "+2") == 0 && !discardPlus4 && !isBotWantToStackWithPlus4)) {
+									cardPicks[0] = i;
 
-								if ((strcmp(linkedListTemp.type, "+2") == 0 && !discardPlus4) || (strcmp(linkedListTemp.type, "+4") == 0 && discardPlus4)) {
-									cardPicks[tempInt] = i;
-									tempInt++;
-								}
-
-								if (tempInt == cardAmountInput)
 									break;
-							}
-
-							if (strcmp(linkedListTemp.type, "+4") == 0)
-								discardPlus4 = true;
-
-							// Fixes the card index
-							currMinus = 0;
-
-							for (i = 0; i < cardAmountInput; i++) {
-								tempInt = cardPicks[i];
-
-								for (j = i + 1; j < cardAmountInput; j++) {
-									if (cardPicks[j] > tempInt)
-										cardPicks[j]--;
 								}
 							}
+
+							// Cleans isBotHaveTheColor
+							for (i = 0; i < 4; i++)
+								isBotHaveTheColor[i] = false;
+
+							/*
+							 Puts a card into a discard pile
+							 */
+							if (turnCycle[playerTurn] == 2)
+								cardSave(bot1Head, &linkedListTemp, cardPicks[0]);
+							else if (turnCycle[playerTurn] == 3)
+								cardSave(bot2Head, &linkedListTemp, cardPicks[0]);
+							else if (turnCycle[playerTurn] == 4)
+								cardSave(bot3Head, &linkedListTemp, cardPicks[0]);
 							
-							// Puts a card into a discard pile
-							for (i = 0; i < cardAmountInput; i++) {
-								// Puts a card into a draw pile
-								if (turnCycle[playerTurn] == 2)
-									cardSave(bot1Head, &linkedListTemp, cardPicks[i]);
-								else if (turnCycle[playerTurn] == 3)
-									cardSave(bot2Head, &linkedListTemp, cardPicks[i]);
-								else if (turnCycle[playerTurn] == 4)
-									cardSave(bot3Head, &linkedListTemp, cardPicks[i]);
+							insertAtEnd(&discardHead, &discardTail, &discardPileCount, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
+
+							// Adds the current plus
+							if (strcmp(linkedListTemp.type, "+2") == 0)
+								currPlus += 2;
+							else {
+								currPlus += 4;
+
+								// Checks if the bot have the color
+								for (i = 0; i < (turnCycle[playerTurn] == 2 ? bot1Cards : (turnCycle[playerTurn] == 3 ? bot2Cards : (turnCycle[playerTurn] == 4 ? bot3Cards : 0))); i++) {
+									// Checks so it wont check the inputted card
+									if (i == cardPicks[0])
+										continue;
+
+									if (turnCycle[playerTurn] == 2)
+										cardSave(bot1Head, &linkedListTemp2, i);
+									else if (turnCycle[playerTurn] == 3)
+										cardSave(bot2Head, &linkedListTemp2, i);
+									else if (turnCycle[playerTurn] == 4)
+										cardSave(bot3Head, &linkedListTemp2, i);
+									
+									if (strcmp(linkedListTemp2.color, "Blue") == 0)
+										isBotHaveTheColor[0] = true;
+									else if (strcmp(linkedListTemp2.color, "Red") == 0)
+										isBotHaveTheColor[1] = true;
+									else if (strcmp(linkedListTemp2.color, "Green") == 0)
+										isBotHaveTheColor[2] = true;
+									else if (strcmp(linkedListTemp2.color, "Yellow") == 0)
+										isBotHaveTheColor[3] = true;
+									else if (strcmp(linkedListTemp2.color, "Black") == 0) {
+										for (j = 0; j < 4; j++)
+											isBotHaveTheColor[j] = true;
+									}
+								}
+								
+								// This code runs to prevent the player didn't pick a color
+								if ((turnCycle[playerTurn] == 2 && bot1Cards == 1) || (turnCycle[playerTurn] == 3 && bot2Cards == 1) || (turnCycle[playerTurn] == 4 && bot3Cards == 1)) {
+									for (i = 0; i < 4; i++)
+										isBotHaveTheColor[i] = true;
+								}
+
+								doWild(turnCycle, playerTurn, &linkedListTemp, isBotHaveTheColor);
+									
+								// Replaces The Discard Pile Wild
+								if (discardPileCount <= 1)
+									deleteAtBeginning(&discardHead, &discardPileCount);
+								else 
+									deleteAtEnd(&discardHead, &discardTail, &discardPileCount);
 								
 								insertAtEnd(&discardHead, &discardTail, &discardPileCount, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
+							}
 
-								// Adds the current plus
-								if (strcmp(linkedListTemp.type, "+2") == 0)
-									currPlus += 2;
-								else {
-									currPlus += 4;
-
-									doWild(turnCycle, playerTurn, &linkedListTemp, isBotHaveTheColor);
-										
-									// Replaces The Discard Pile Wild
-									if (discardPileCount <= 1)
-										deleteAtBeginning(&discardHead, &discardPileCount);
-									else 
-										deleteAtEnd(&discardHead, &discardTail, &discardPileCount);
-									
-									insertAtEnd(&discardHead, &discardTail, &discardPileCount, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
-								}
-
-								// Deletes the card from bot's pile
-								if (cardPicks[i] == 0) {
-									if (turnCycle[playerTurn] == 2)
-										deleteAtBeginning(&bot1Head, &bot1Cards);
-									else if (turnCycle[playerTurn] == 3)
-										deleteAtBeginning(&bot2Head, &bot2Cards);
-									else if (turnCycle[playerTurn] == 4)
-										deleteAtBeginning(&bot3Head, &bot3Cards);
-								}
-								else if (cardPicks[i] == playerCards - 1) {
-									if (turnCycle[playerTurn] == 2)
-										deleteAtEnd(&bot1Head, &bot1Tail, &bot1Cards);
-									else if (turnCycle[playerTurn] == 3)
-										deleteAtEnd(&bot2Head, &bot2Tail, &bot2Cards);
-									else if (turnCycle[playerTurn] == 4)
-										deleteAtEnd(&bot3Head, &bot3Tail, &bot3Cards);
-								}
-								else {
-									if (turnCycle[playerTurn] == 2)
-										deleteAtMiddle(&bot1Head, &bot1Cards, cardPicks[0]);
-									else if (turnCycle[playerTurn] == 3)
-										deleteAtMiddle(&bot2Head, &bot2Cards, cardPicks[0]);
-									else if (turnCycle[playerTurn] == 4)
-										deleteAtMiddle(&bot3Head, &bot3Cards, cardPicks[0]);
-								}
+							// Deletes the card from bot's pile
+							if (cardPicks[0] == 0) {
+								if (turnCycle[playerTurn] == 2)
+									deleteAtBeginning(&bot1Head, &bot1Cards);
+								else if (turnCycle[playerTurn] == 3)
+									deleteAtBeginning(&bot2Head, &bot2Cards);
+								else if (turnCycle[playerTurn] == 4)
+									deleteAtBeginning(&bot3Head, &bot3Cards);
+							}
+							else if (cardPicks[0] == (turnCycle[playerTurn] == 2 ? bot1Cards : (turnCycle[playerTurn] == 3 ? bot2Cards : bot3Cards)) - 1) {
+								if (turnCycle[playerTurn] == 2)
+									deleteAtEnd(&bot1Head, &bot1Tail, &bot1Cards);
+								else if (turnCycle[playerTurn] == 3)
+									deleteAtEnd(&bot2Head, &bot2Tail, &bot2Cards);
+								else if (turnCycle[playerTurn] == 4)
+									deleteAtEnd(&bot3Head, &bot3Tail, &bot3Cards);
+							}
+							else {
+								if (turnCycle[playerTurn] == 2)
+									deleteAtMiddle(&bot1Head, &bot1Cards, cardPicks[0]);
+								else if (turnCycle[playerTurn] == 3)
+									deleteAtMiddle(&bot2Head, &bot2Cards, cardPicks[0]);
+								else if (turnCycle[playerTurn] == 4)
+									deleteAtMiddle(&bot3Head, &bot3Cards, cardPicks[0]);
 							}
 
 							printf("Bot %d stacks the plus and now the total plus is %d\n", turnCycle[playerTurn] - 1, currPlus);
@@ -1354,7 +1507,11 @@ int main() {
 					if (turnCycle[playerTurn] == 1) {
 						// UI
 						printf("1. Input a card\n");
-						printf("2. Get a card from draw pile\n");
+
+						if (canTakeCard)
+							printf("2. Get a card from draw pile\n");
+						else
+							printf("2. Skip turn\n");
 
 						// Checks if the player can input a card or not
 						cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
@@ -1376,39 +1533,35 @@ int main() {
 
 						// Input a card
 						if (gameWarp == 1) {
-							// Puts the card amount
 							validInput = true;
+							cardAmountInput = 0;
 
 							// UI
-							printf("Choose the amount of cards that you want to input : ");
-							scanf("%d", &cardAmountInput);
-							while (getchar() != '\n');
-
-							// If user inputs invalid value
-							if (cardAmountInput < 1 || cardAmountInput > playerCards) {
-								printf("Invalid Input\n");
-								getchar();
-
-								continue;
-							}
+							printf("Input the cards (Press 'Enter' -> 'Ctrl + Z' -> 'Enter' when you're done):\n");
 
 							cardPickDelete(cardPicks, cardPicksDeclaration);
 
-							// Inputs the card
-							printf("Choose the cards that you want to input:\n");
+							do
+							{
+								if (scanf("%d", &cardPicks[cardAmountInput]) != 1)
+									break;
+								
+								cardPicks[cardAmountInput]--;
+								cardPicksDeclaration[cardAmountInput] = cardPicks[cardAmountInput];
+								
+								for (i = 0; i < cardAmountInput; i++) {
+									if (cardPicks[cardAmountInput] == cardPicksDeclaration[i]) {
+										validInput = false;
 
-							for (i = 0; i < cardAmountInput; i++) {
-								scanf("%d", &cardPicks[i]);
-								cardPicks[i]--;
+										break;
+									}
+								}
 
-								cardPicksDeclaration[cardPicks[i]]++;
+								cardAmountInput++;
 
-								// Checks so the player can't input the same card
-								if (cardPicksDeclaration[cardPicks[i]] > 1)
-									validInput = false;
+								while (getchar() != '\n');
 							}
-
-							while (getchar() != '\n');
+							while (true);
 
 							if (!validInput) {
 								printf("Invalid Input!");
@@ -1460,8 +1613,6 @@ int main() {
 							}
 
 							// Fixes the card index
-							currMinus = 0;
-
 							for (i = 0; i < cardAmountInput; i++) {
 								tempInt = cardPicks[i];
 
@@ -1491,15 +1642,20 @@ int main() {
 											else
 												l++;
 											
-											if (l == 0)
-												l = 3;				
+											// Checks so l never go below 0
+											if (l < 0)
+												l = 3;
+											
+											// Checks so l never go above 3;
+											l %= 4;
 
 											if (!playerStats[turnCycle[l] - 1].isAlreadyWin)
 												break;
 										}
 										while (true);
 
-										doSkip(&rounds, turnCycle, l, reversed);
+										rounds = l;
+										doSkip(turnCycle, l, reversed);
 									}
 
 									// Reverse
@@ -1542,15 +1698,7 @@ int main() {
 						}
 
 						// Grab a card from a draw pile
-						else if (gameWarp == 2) {
-							// Checks so the player can't grab many cards
-							if (!canTakeCard) {
-								printf("You can\'t take another card, press \'Enter\' to continue");
-								getchar();
-
-								continue;
-							}
-
+						else if (gameWarp == 2 && canTakeCard) {
 							// Pick a random card from draw pile
 							rng1 = rand() % drawPileCount;
 
@@ -1593,6 +1741,10 @@ int main() {
 									continue;
 								}
 							}
+							else {
+								printf("\nPress \'Enter\' to continue");
+								getchar();
+							}
 						}
 					}
 
@@ -1625,134 +1777,124 @@ int main() {
 							// Input a card
 							if (rng2 == 0) {
 								/*
-								Card Amount Input Counter
-								*/
-
-								// Empties typeAmounts
-								for (i = 0; i < 15; i++)
-									typeAmounts[i] = 0;
-								
-								// Resets isBotHaveTheColor
-								for (i = 0; i < 4; i++)
-									isBotHaveTheColor[i] = false;
-								
-								// Empties cardAmount
-								for (i = 0; i < 4; i++) {
-									for (j = 0; j < 13; j++)
-										cardAmount[i][j] = 0;
-								}
-
-								// Empties wildCardAmount
-								wildCardAmount[0] = 0;
-								wildCardAmount[1] = 0;
-								
-								// Counts the amount of type that the bot have and isBotHaveTheColor Calculator
-								for (i = 0; i < (turnCycle[playerTurn] == 2 ? bot1Cards : (turnCycle[playerTurn] == 3 ? bot2Cards : bot3Cards)); i++) {
-									if (turnCycle[playerTurn] == 2)
-										cardSave(bot1Head, &linkedListTemp, i);
-									else if (turnCycle[playerTurn] == 3)
-										cardSave(bot2Head, &linkedListTemp, i);
-									else if (turnCycle[playerTurn] == 4)
-										cardSave(bot3Head, &linkedListTemp, i);
-
-									// Checks the color
-									if (strcmp(linkedListTemp.color, "Blue") == 0) {
-										isBotHaveTheColor[0] = true;
-										tempInt = 0;
-									}
-									else if (strcmp(linkedListTemp.color, "Red") == 0) {
-										isBotHaveTheColor[1] = true;
-										tempInt = 1;
-									}
-									else if (strcmp(linkedListTemp.color, "Green") == 0) {
-										isBotHaveTheColor[2] = true;
-										tempInt = 2;
-									}
-									else if (strcmp(linkedListTemp.color, "Yellow") == 0) {
-										isBotHaveTheColor[3] = true;
-										tempInt = 3;
-									}
-									
-									// If the card is a normal type
-									if (linkedListTemp.number != -1) {
-										typeAmounts[linkedListTemp.number]++;
-										cardAmount[tempInt][linkedListTemp.number]++;
-									}
-									
-									// If the card is an action type
-									else {
-										if (strcmp(linkedListTemp.type, "Reverse") == 0) {
-											typeAmounts[10]++;
-											cardAmount[tempInt][10]++;
-										}
-										else if (strcmp(linkedListTemp.type, "Skip") == 0) {
-											typeAmounts[11]++;
-											cardAmount[tempInt][11]++;
-										}
-										else if (strcmp(linkedListTemp.type, "+2") == 0) {
-											typeAmounts[12]++;
-											cardAmount[tempInt][12]++;
-										}
-										else if (strcmp(linkedListTemp.type, "Wild") == 0) {
-											typeAmounts[13]++;
-											wildCardAmount[0]++;
-
-											for (j = 0; j < 4; j++)
-												isBotHaveTheColor[j] = true;
-										}
-										else if (strcmp(linkedListTemp.type, "+4") == 0) {
-											typeAmounts[14]++;
-											wildCardAmount[1]++;
-
-											for (j = 0; j < 4; j++)
-												isBotHaveTheColor[j] = true;
-										}
-									}
-								}
-
-								// Counts the maximum amount of card the bot can stack
-								biggestAmount = 0;
-
-								for (i = 0; i < 13; i++) {
-									if (typeAmounts[i] > biggestAmount) {
-										biggestAmount = typeAmounts[i];
-										cardNameInt = i;
-									}
-								}
-								
-								// cardAmountInput Calculator
+								 Inputs the card for the bot
+								 */
 								cardSave(discardHead, &linkedListTemp2, discardPileCount - 1);
-								cardAmountInput = 1;
+								cardAmountInput = 0;
 								validInput = true;
-
-								// Inputs the card for the bot
+								isContinue = false;
 								cardPickDelete(cardPicks, cardPicksDeclaration);
+								isDoneChecking = false;
 
 								printf("Bot %d inputs:\n", turnCycle[playerTurn] - 1);
 
-								for (i = 0; i < cardAmountInput; i++) {
-									if (turnCycle[playerTurn] == 2)
-										cardPicks[i] = rand() % bot1Cards;
-									else if (turnCycle[playerTurn] == 3)
-										cardPicks[i] = rand() % bot2Cards;
-									else if (turnCycle[playerTurn] == 4)
-										cardPicks[i] = rand() % bot3Cards;
-
-									// Checks if the card inputted is valid or not
-									cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
+								// LinkedListTemp = current player card that is currently in check
+								// LinkedListTemp2 = current discard pile
+								// LinkedListTemp3 = first card put on the discard pile
+								
+								// i = determines the index of cardPicks[]
+								for (i = 0; i < 8; i++) {
+									if (i == (turnCycle[playerTurn] == 2 ? bot1Cards : (turnCycle[playerTurn] == 3 ? bot2Cards : bot3Cards)))
+										break;
 									
+									// j = scroll through the cards
+									for (j = 0; j < (turnCycle[playerTurn] == 2 ? bot1Cards : (turnCycle[playerTurn] == 3 ? bot2Cards : bot3Cards)); j++) {
+										// Checks so it wont check the same card
+										for (k = 0; k < cardAmountInput; k++) {
+											if (j == cardPicks[k]) {
+												isContinue = true;
+
+												break;
+											}
+										}
+
+										if (isContinue) {
+											isContinue = false;
+
+											continue;
+										}
+
+										// Saves the card value
+										if (turnCycle[playerTurn] == 2)
+											cardSave(bot1Head, &linkedListTemp, j);
+										else if (turnCycle[playerTurn] == 3)
+											cardSave(bot2Head, &linkedListTemp, j);
+										else if (turnCycle[playerTurn] == 4)
+											cardSave(bot3Head, &linkedListTemp, j);
+										
+										// 1st card
+										if (i == 0 && (strcmp(linkedListTemp.color, linkedListTemp2.color) == 0 || (strcmp(linkedListTemp.type, linkedListTemp2.type) == 0 && strcmp(linkedListTemp.type, "Normal") != 0) || (linkedListTemp.number == linkedListTemp2.number && linkedListTemp.number != -1) || strcmp(linkedListTemp.type, "Wild") == 0 || strcmp(linkedListTemp.type, "+4") == 0)) {
+											// Saves the card value
+											if (turnCycle[playerTurn] == 2)
+												cardSave(bot1Head, &linkedListTemp3, j);
+											else if (turnCycle[playerTurn] == 3)
+												cardSave(bot2Head, &linkedListTemp3, j);
+											else if (turnCycle[playerTurn] == 4)
+												cardSave(bot3Head, &linkedListTemp3, j);
+											
+											if (strcmp(linkedListTemp.type, "Wild") == 0 || strcmp(linkedListTemp.type, "+4") == 0)
+												isDoneChecking = true;
+
+											cardPicks[i] = j;
+											cardAmountInput++;
+											
+											break;
+										}
+
+										// Else
+										else if (i != 0 && ((strcmp(linkedListTemp.type, linkedListTemp3.type) == 0 && strcmp(linkedListTemp.type, "Normal") != 0) || (linkedListTemp.number == linkedListTemp3.number && linkedListTemp.number != -1))) {
+											cardPicks[i] = j;
+											cardAmountInput++;
+
+											break;
+										}
+
+										// Checks the card
+										if (j == (turnCycle[playerTurn] == 2 ? bot1Cards : (turnCycle[playerTurn] == 3 ? bot2Cards : bot3Cards)) - 1)
+											isDoneChecking = true;
+									}
+
+									if (isDoneChecking)
+										break;
+								}
+
+								// Prints the inputted card
+								for (i = 0; i < cardAmountInput; i++) {
+									// Saves the card value
+									if (turnCycle[playerTurn] == 2)
+										cardSave(bot1Head, &linkedListTemp, cardPicks[i]);
+									else if (turnCycle[playerTurn] == 3)
+										cardSave(bot2Head, &linkedListTemp, cardPicks[i]);
+									else if (turnCycle[playerTurn] == 4)
+										cardSave(bot3Head, &linkedListTemp, cardPicks[i]);
+
+									cardPrint(linkedListTemp);
+
+									if (i != cardAmountInput - 1)
+										puts("");
+								}
+
+								getchar();
+
+								// Fixes the cardPicks index
+								for (i = 0; i < cardAmountInput; i++) {
+									tempInt = cardPicks[i];
+
+									for (j = i + 1; j < cardAmountInput; j++) {
+										if (cardPicks[j] > tempInt)
+											cardPicks[j]--;
+									}
+								}
+
+								// Inputs the card
+								for (i = 0; i < cardAmountInput; i++) {
+									// Saves the card value
 									if (turnCycle[playerTurn] == 2)
 										cardSave(bot1Head, &linkedListTemp2, cardPicks[i]);
 									else if (turnCycle[playerTurn] == 3)
 										cardSave(bot2Head, &linkedListTemp2, cardPicks[i]);
 									else if (turnCycle[playerTurn] == 4)
 										cardSave(bot3Head, &linkedListTemp2, cardPicks[i]);
-									
-									if (!(strcmp(linkedListTemp2.color, linkedListTemp.color) == 0 || (strcmp(linkedListTemp2.type, linkedListTemp.type) == 0 && strcmp(linkedListTemp2.type, "Normal") != 0) || (linkedListTemp2.number == linkedListTemp.number && linkedListTemp2.number != -1) || strcmp(linkedListTemp2.type, "Wild") == 0 || strcmp(linkedListTemp2.type, "+4") == 0)) {
-										validInput = false;
-
-										break;
-									}
 
 									// Puts the card into discard pile
 									insertAtEnd(&discardHead, &discardTail, &discardPileCount, linkedListTemp2.cardNumber, linkedListTemp2.number, linkedListTemp2.type, linkedListTemp2.color);
@@ -1762,7 +1904,7 @@ int main() {
 										// Skip
 										if (strcmp(linkedListTemp2.type, "Skip") == 0) {
 											l = rounds % 4;
-
+										
 											// Checks so the system won't skip the player who have won
 											do
 											{
@@ -1771,15 +1913,20 @@ int main() {
 												else
 													l++;
 												
-												if (l == 0)
-													l = 3;				
+												// Checks so l never go below 0
+												if (l < 0)
+													l = 3;
 												
+												// Checks so l never go above 3;
+												l %= 4;
+
 												if (!playerStats[turnCycle[l] - 1].isAlreadyWin)
 													break;
 											}
 											while (true);
 
-											doSkip(&rounds, turnCycle, l, reversed);
+											rounds = l;
+											doSkip(turnCycle, l, reversed);
 										}
 
 										// Reverse
@@ -1794,13 +1941,52 @@ int main() {
 
 										// Wild and +4
 										else if (strcmp(linkedListTemp2.type, "+4") == 0 || strcmp(linkedListTemp2.type, "Wild") == 0) {
+											// Cleans isBotHaveTheColor
+											for (j = 0; j < 4; j++)
+												isBotHaveTheColor[j] = false;
+											
+											// Checks if the bot have the color
+											for (j = 0; j < (turnCycle[playerTurn] == 2 ? bot1Cards : (turnCycle[playerTurn] == 3 ? bot2Cards : (turnCycle[playerTurn] == 4 ? bot3Cards : 0))); j++) {
+												// Checks so the system wont check the inputted wild
+												if (j == cardPicks[i])
+													continue;
+
+												if (turnCycle[playerTurn] == 2)
+													cardSave(bot1Head, &linkedListTemp3, j);
+												else if (turnCycle[playerTurn] == 3)
+													cardSave(bot2Head, &linkedListTemp3, j);
+												else if (turnCycle[playerTurn] == 4)
+													cardSave(bot3Head, &linkedListTemp3, j);
+												
+												if (strcmp(linkedListTemp3.color, "Blue") == 0)
+													isBotHaveTheColor[0] = true;
+												else if (strcmp(linkedListTemp3.color, "Red") == 0)
+													isBotHaveTheColor[1] = true;
+												else if (strcmp(linkedListTemp3.color, "Green") == 0)
+													isBotHaveTheColor[2] = true;
+												else if (strcmp(linkedListTemp3.color, "Yellow") == 0)
+													isBotHaveTheColor[3] = true;
+												else if (strcmp(linkedListTemp3.color, "Black") == 0) {
+													for (k = 0; k < 4; k++)
+														isBotHaveTheColor[k] = true;
+													
+													break;
+												}	
+											}
+
+											// This code runs to prevent the player didn't pick a color
+											if ((turnCycle[playerTurn] == 2 && bot1Cards == 1) || (turnCycle[playerTurn] == 3 && bot2Cards == 1) || (turnCycle[playerTurn] == 4 && bot3Cards == 1)) {
+												for (i = 0; i < 4; i++)
+													isBotHaveTheColor[i] = true;
+											}
+
 											if (strcmp(linkedListTemp2.type, "+4") == 0) {
 												currPlus += 4;
 												inPlusCondition = true;
 											}
 
 											doWild(turnCycle, playerTurn, &linkedListTemp2, isBotHaveTheColor);
-											
+
 											// Replaces The Discard Pile Wild
 											if (discardPileCount <= 1)
 												deleteAtBeginning(&discardHead, &discardPileCount);
@@ -1820,7 +2006,7 @@ int main() {
 										else if (turnCycle[playerTurn] == 4)
 											deleteAtBeginning(&bot3Head, &bot3Cards);
 									}
-									else if (cardPicks[i] == playerCards - 1) {
+									else if (cardPicks[i] == (turnCycle[playerTurn] == 2 ? bot1Cards : (turnCycle[playerTurn] == 3 ? bot2Cards : bot3Cards)) - 1) {
 										if (turnCycle[playerTurn] == 2)
 											deleteAtEnd(&bot1Head, &bot1Tail, &bot1Cards);
 										else if (turnCycle[playerTurn] == 3)
@@ -1836,20 +2022,30 @@ int main() {
 										else if (turnCycle[playerTurn] == 4)
 											deleteAtMiddle(&bot3Head, &bot3Cards, cardPicks[i]);
 									}
-
-									cardPrint(linkedListTemp2);
-									puts("");
 								}
 
 								if (!validInput)
 									continue;
 
-								printf("\nPress \'Enter\' to conntinue", turnCycle[playerTurn] - 1);
+								printf("\nPress \'Enter\' to conntinue");
 								getchar();
 							}
 
 							// Grab a card from a draw pile
 							else if (rng2 == 1) {
+								// This program runs if the cards on the draw pile ran out
+								if (drawPileCount == 0) {
+									for (i = 0; i < discardPileCount - 1; i++) {
+										cardSave(discardHead, &linkedListTemp, i);
+
+										if (strcmp(linkedListTemp.type, "Wild") == 0 || strcmp(linkedListTemp.type, "+4") == 0)
+											strcpy(linkedListTemp.color, "Black");
+
+										insertAtEnd(&cardHead, &cardTail, &drawPileCount, linkedListTemp.cardNumber, linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
+										deleteAtBeginning(&discardHead, &discardPileCount);
+									}
+								}
+
 								// Pick a random card from draw pile
 								rng1 = rand() % drawPileCount;
 
@@ -1871,7 +2067,59 @@ int main() {
 									deleteAtEnd(&cardHead, &cardTail, &drawPileCount);
 								else
 									deleteAtMiddle(&cardHead, &drawPileCount, rng1);
-								
+
+								// Checks whether the bot will input the card or no
+								botPutACard = false;
+								cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
+
+								for (i = 0; i < (turnCycle[playerTurn] == 2 ? bot1Cards : (turnCycle[playerTurn] == 3 ? bot2Cards : (turnCycle[playerTurn] == 4 ? bot3Cards : 0))); i++) {
+									if (turnCycle[playerTurn] == 2)
+										cardSave(bot1Head, &linkedListTemp2, i);
+									else if (turnCycle[playerTurn] == 3)
+										cardSave(bot2Head, &linkedListTemp2, i);
+									else if (turnCycle[playerTurn] == 4)
+										cardSave(bot3Head, &linkedListTemp2, i);
+
+									if (strcmp(linkedListTemp.color, linkedListTemp2.color) == 0 || (strcmp(linkedListTemp.type, linkedListTemp2.type) == 0 && strcmp(linkedListTemp2.type, "Normal") != 0) || (linkedListTemp.number == linkedListTemp2.number && linkedListTemp2.number != -1) || strcmp(linkedListTemp2.type, "+4") == 0 || strcmp(linkedListTemp2.type, "Wild") == 0) {
+										// Logic for bot 1
+										if (turnCycle[playerTurn] == 2) {
+											if (strcmp(linkedListTemp2.type, "+4") == 0) {
+												if (reversed) {
+													if (playerTurn == 0) {
+														if ((turnCycle[3] == 1 && playerCards == 1) ||
+														(turnCycle[3] == 2 && bot1Cards == 1) ||
+														(turnCycle[3] == 3 && bot2Cards == 1) ||
+														(turnCycle[3] == 4 && bot3Cards == 1))
+														botPutACard = true;
+													}
+													else {
+														if ((turnCycle[playerTurn - 1] == 1 && playerCards == 1) ||
+														(turnCycle[playerTurn - 1] == 2 && bot1Cards == 1) ||
+														(turnCycle[playerTurn - 1] == 3 && bot2Cards == 1) ||
+														(turnCycle[playerTurn - 1] == 4 && bot3Cards == 1))
+														botPutACard = true;
+													}
+												}
+												else {
+													if ((turnCycle[(playerTurn + 1) % 4] == 1 && playerCards == 1) ||
+														(turnCycle[(playerTurn + 1) % 4] == 2 && bot1Cards == 1) ||
+														(turnCycle[(playerTurn + 1) % 4] == 3 && bot2Cards == 1) ||
+														(turnCycle[(playerTurn + 1) % 4] == 4 && bot3Cards == 1))
+														botPutACard = true;
+												}
+											}
+											else
+												botPutACard = true;
+										}
+
+										// Logic for other bot
+										else
+											botPutACard = true;
+										
+										break;
+									}
+								}
+
 								printf("\nBot %d grabs a card, Press \'Enter\' to conntinue", turnCycle[playerTurn] - 1);
 								getchar();
 							}
@@ -1879,6 +2127,12 @@ int main() {
 							break;
 						}
 						while (true);
+
+						if (botPutACard) {
+							botPutACard = false;
+
+							continue;
+						}
 					}
 				}
 
@@ -1902,8 +2156,18 @@ int main() {
 					else
 						printf("Bot %d wins and get ", turnCycle[playerTurn] - 1);
 
-					if (playersLeft == 4)
+					if (playersLeft == 4) {
 						printf("1st ");
+
+						// Updates the file
+						stats[turnCycle[playerTurn] - 1]++;
+						statsFile = fopen("stats.evan", "wb");
+
+						for (i = 0; i < 4; i++)
+							fwrite(&stats[i], sizeof(stats[i]), 1, statsFile);
+
+						fclose(statsFile);
+					}
 					if (playersLeft == 3)
 						printf("2nd ");
 					if (playersLeft == 2)
@@ -1931,6 +2195,7 @@ int main() {
 					rounds = 1;
 				
 				canTakeCard = true;
+				botPutACard = false;
 			}
 			while (true);
 
@@ -1964,14 +2229,124 @@ int main() {
 
 		// Instructions
 		else if (mainWarp == 2) {
-			system("cls");
-			logo();
+			do
+			{
+				do
+				{
+					system("cls");
+					logo();
 
-			printf(" Instructions \n");
-			printf("==============\n\n");
+					printf(" Instructions \n");
+					printf("==============\n\n");
 
-			printf("Press \'Enter\' to go back to main menu");
-			getchar();
+					printf("1. Opening\n");
+					printf("2. Cards\n");
+					printf("3. Rules\n");
+					printf("4. Closing\n");
+					printf("5. Main Menu\n");
+
+					printf("Your Choice : ");
+					scanf("%d", &instructionsWarp);
+					while (getchar() != '\n');
+				}
+				while (instructionsWarp != 1 && instructionsWarp != 2 && instructionsWarp != 3 && instructionsWarp != 4 && instructionsWarp != 5);
+
+				if (instructionsWarp == 1) {
+					system("cls");
+					logo();
+
+					printf(" Opening \n");
+					printf("=========\n\n");
+
+					printf("Welcome to UNO, the fun card game to play with. Your objectives is to get rid all of your\n");
+					printf("cards and the first one to get rid of the card wins. This game consists of 4 players\n");
+					printf("that include 1 player and 3 bots.\n\n");
+
+					printf("Press \'Enter\' to go back to instructions menu");
+					getchar();
+				}
+				else if (instructionsWarp == 2) {
+					system("cls");
+					logo();
+
+					printf(" What Each Card Does \n");
+					printf("=====================\n\n");
+
+					printf("Number: Doesn't have any action\n");
+					printf("Skip: Skips the turn of the next player\n");
+					printf("Reverse: Reverses the player turn\n");
+					printf("+2: Adds 2 card to the next player\n");
+					printf("Wild: A player who puts the card can choose any color\n");
+					printf("+4: Adds 4 card to the next player and a player who puts the card can choose any color\n\n");
+
+					printf(" Card Amounts \n");
+					printf("==============\n\n");
+
+					printf("- One 0 cards each color\n");
+					printf("- Two other cards each color\n");
+					printf("- Eight Wilds\n");
+					printf("- Four Wild Draw Fours\n");
+					printf("- Each player got 7 cards from the beginning\n\n");
+
+					printf("Press \'Enter\' to go back to instructions menu");
+					getchar();
+				}
+				else if (instructionsWarp == 3) {
+					system("cls");
+					logo();
+
+					printf(" Main Rules \n");
+					printf("============\n\n");
+
+					printf("1. A player can input a card if:\n");
+					printf("- The card has the same color\n");
+					printf("- The card has the same type/number\n\n");
+
+					printf("2. A player can stack the inputted card if the inputted card has the same type/number\n\n");
+
+					printf("3. A player can input a Wild card or a +4 card anytime but it cannot be stacked\n\n");
+
+					printf("4. A player must take 1 card if they have no card to be inputted\n\n");
+
+					printf("5. Inputted plus card can be stacked if the next player have one\n");
+					printf("- For example if a player puts +2, the next player can put a plus 2 to stack the plus\n");
+					printf("  if they have one and the total plus becomes 4\n");
+					printf("- A +2 can be stacked by +4 but a +4 can\'t be stacked by +2\n\n");
+
+					printf(" Discard Pile Rules \n");
+					printf("====================\n\n");
+
+					printf("1. If the card is a Number, nothing will happen\n\n");
+
+					printf("2. If the card is a Reverse, the turn cycle will be reversed, but the 1st player will\n");
+					printf("   input the card first\n");
+
+					printf("3. If the card is a Skip, the 1st player will get skipped\n\n");
+
+					printf("4. If the card is a +2, the 1st player will get 2 cards\n\n");
+
+					printf("5. If the card is a Wild, the 1st player can choose what color to put\n\n");
+
+					printf("6. There will never be a +4 in the first card of discard pile\n\n");
+
+					printf("Press \'Enter\' to go back to instructions menu");
+					getchar();
+				}
+				else if (instructionsWarp == 4) {
+					system("cls");
+					logo();
+
+					printf(" Closing \n");
+					printf("=========\n\n");
+
+					printf("Thanks for reading the instructions, have fun and remember\n");
+					printf("#cheatingisforpussies\n\n");
+
+					printf("Press \'Enter\' to go back to instructions menu");
+					getchar();
+				}
+			}
+			while (instructionsWarp != 5);
 		}
 
 		// Credits
@@ -1998,8 +2373,25 @@ int main() {
 			printf("Press \'Enter\' to go back to main menu");
 			getchar();
 		}
+
+		// Stats
+		else if (mainWarp == 4) {
+			system("cls");
+			logo();
+
+			printf(" Stats \n");
+			printf("=======\n\n");
+
+			printf("Player Wins : %d\n", stats[0]);
+			printf("Bot 1 Wins : %d\n", stats[1]);
+			printf("Bot 2 Wins : %d\n", stats[2]);
+			printf("Bot 3 Wins : %d\n\n", stats[3]);
+
+			printf("Press \'Enter\' to go back to main menu");
+			getchar();
+		}
 	}
-	while (mainWarp != 4);
+	while (mainWarp != 5);
 	
 	// Exit Menu
 	system("cls");
@@ -2052,6 +2444,37 @@ int rpsWinnerFinder(char choice1, char choice2, int player1, int player2) {
 		return 0; // If player 1 and 2 chooses the same
 }
 
+void insertAtBeginning(Node** headRef, int* count, int cardNum, int num, char* type, char* color) {
+    Node* current = (Node*)malloc(sizeof(Node));
+    current -> cardNumber = cardNum;
+    current -> number = num;
+    strcpy(current -> type, type);
+    strcpy(current -> color, color);
+    (*count)++;
+    
+    current -> next = (*headRef);
+    (*headRef) = current;
+}
+
+void insertAtMiddle(Node** headRef, int* count, int cardNum, int num, char* type, char* color, int index) {
+    Node* current = (Node*)malloc(sizeof(Node));
+    current -> cardNumber = cardNum;
+    current -> number = num;
+    strcpy(current -> type, type);
+    strcpy(current -> color, color);
+    (*count)++;
+    
+    Node *newNode;
+    newNode = (*headRef);
+    
+    int i;
+    for (i = 0; i < index - 1; i++) {
+        newNode = newNode -> next;
+    }
+    current -> next = newNode -> next;
+    newNode -> next = current;
+}
+
 void insertAtEnd(Node** headRef, Node** tailRef, int* count, int cardNum, int num, char* type, char* color) {
 	Node* current = (Node*)malloc(sizeof(Node));
 	current -> cardNumber = cardNum;
@@ -2064,8 +2487,9 @@ void insertAtEnd(Node** headRef, Node** tailRef, int* count, int cardNum, int nu
 	if ((*count) == 1)
 		(*headRef) = current;
 	// for end insert
-	else
+	else {
 		(*tailRef) -> next = current;
+	}
 	
 	(*tailRef) = current;
 	(*tailRef) -> next = NULL;
@@ -2107,7 +2531,7 @@ void deleteAtEnd(Node** headRef, Node** tailRef, int* count) {
 	(*count)--;
 }
 
-void cardSave(Node* node, Temp1 *linkedListTemp, int index) {
+void cardSave(Node* node, CardData *linkedListTemp, int index) {
 	int i;
 
 	for (i = 0; i < index; i++)
@@ -2160,7 +2584,7 @@ void doReverse(bool *reverse) {
 		*reverse = true;
 }
 
-void doSkip(int *roundsPtr, int turnCycle[], int playerTurn, bool reversed) {
+void doSkip(int turnCycle[], int playerTurn, bool reversed) {
 	if (turnCycle[playerTurn] == 1)
 		printf("You ");
 	else if (turnCycle[playerTurn] == 2)
@@ -2172,14 +2596,9 @@ void doSkip(int *roundsPtr, int turnCycle[], int playerTurn, bool reversed) {
 	
 	printf("got skipped, press \'Enter\' to continue");
 	getchar();
-
-	if (reversed)
-		(*roundsPtr)--;
-	else
-		(*roundsPtr)++;
 }
 
-void doWild(int turnCycle[], int playerTurn, Temp1 *linkedListTempPtr, bool isBotHaveTheColor[]) {
+void doWild(int turnCycle[], int playerTurn, CardData *linkedListTempPtr, bool isBotHaveTheColor[]) {
 	int colorPicker;
 
 	char wildCardInput[7];
@@ -2202,13 +2621,18 @@ void doWild(int turnCycle[], int playerTurn, Temp1 *linkedListTempPtr, bool isBo
 		while (colorPicker != 1 && colorPicker != 2 && colorPicker != 3 && colorPicker != 4);
 	}
 
-	// If the turn is bot's
+	// If the turn is bot 3's
+	else if (turnCycle[playerTurn] == 4) {
+		colorPicker = rand() % 4 + 1;
+	}
+
+	// If the turn is the other bot's
 	else {
 		do
 		{
 			colorPicker = rand() % 4 + 1;
 
-			if (isBotHaveTheColor[colorPicker])
+			if (isBotHaveTheColor[colorPicker - 1])
 				break;
 		}
 		while (true);
@@ -2228,7 +2652,7 @@ void doWild(int turnCycle[], int playerTurn, Temp1 *linkedListTempPtr, bool isBo
 	strcpy(linkedListTempPtr -> color, wildCardInput);
 }
 
-void cardPrint(Temp1 linkedListTemp) {
+void cardPrint(CardData linkedListTemp) {
 	//printf("%d %s %s\n", linkedListTemp.number, linkedListTemp.type, linkedListTemp.color);
 
 	// Chosen Wild
@@ -2247,7 +2671,7 @@ void cardPrint(Temp1 linkedListTemp) {
 	}
 }
 
-bool canInputCard(Node* node, Temp1 linkedListTemp, int playerCards) {
+bool canInputCard(Node* node, CardData linkedListTemp, int playerCards) {
 	int i;
 
 	for (i = 0; i < playerCards; i++) {
