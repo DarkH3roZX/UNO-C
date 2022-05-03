@@ -274,8 +274,8 @@ int main() {
 			printf("Where do you want to go?\n");
 			printf("1. Play UNO\n");
 			printf("2. How To Play\n");
-			printf("3. Credits\n");
-			printf("4. Stats\n");
+			printf("3. Stats\n");
+			printf("4. Credits\n");
 			printf("5. Exit\n\n");
 			
 			printf("Your Choice : ");
