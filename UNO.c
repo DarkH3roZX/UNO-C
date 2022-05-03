@@ -338,14 +338,14 @@ int main() {
 
 				// If the RPS is a tie
 				if (winnerRPS == 0) {
-					printf("You and your opponents pick a same choice, press \'Enter\' to play again!");
+					printf("\nYou and your opponents pick a same choice, press \'Enter\' to play again!");
 					getchar();
 
 					continue;
 				}
 
 				// Prints what the player choose
-				printf("You pick ");
+				printf("\nYou pick ");
 
 				if (playerChoicesRPS[0] == 'r')
 					printf("Rock");
@@ -372,7 +372,7 @@ int main() {
 					losersRPS[0] = 2;
 
 					printf("You WIN!\n");
-					printf("Press \'Enter\' To Continue!");
+					printf("Press \'Enter\' to continue");
 					getchar();
 				}
 
@@ -382,7 +382,7 @@ int main() {
 					losersRPS[0] = 1;
 
 					printf("You LOSE!\n");
-					printf("Press \'Enter\' To Continue!");
+					printf("Press \'Enter\' to continue");
 					getchar();
 				}
 
@@ -413,20 +413,20 @@ int main() {
 				// If bot 2 and 3 picks the same choice
 				if (playerChoicesRPS[2] == playerChoicesRPS[3]) {
 					if (playerChoicesRPS[2] == 'r')
-						printf("Both Bot 2 and 3 picks rock, it\'s a tie");
+						printf("\nBoth Bot 2 and 3 picks rock, it\'s a tie");
 					else if (playerChoicesRPS[2] == 'p')
-						printf("Both Bot 2 and 3 picks paper, it\'s a tie");
+						printf("\nBoth Bot 2 and 3 picks paper, it\'s a tie");
 					else if (playerChoicesRPS[2] == 's')
-						printf("Both Bot 2 and 3 picks scissors, it\'s a tie");
+						printf("\nBoth Bot 2 and 3 picks scissors, it\'s a tie");
 					
-					printf("\nPress \'Enter\' to continue!");
+					printf("\nPress \'Enter\' to continue");
 					getchar();
 
 					continue;
 				}
 
 				// Prints what the player choose
-				printf("Bot 2 picks ");
+				printf("\nBot 2 picks ");
 
 				if (playerChoicesRPS[2] == 'r')
 					printf("Rock");
@@ -456,7 +456,7 @@ int main() {
 					losersRPS[1] = 4;
 
 					printf("Bot 2 Wins!\n");
-					printf("Press \'Enter\' To Continue!");
+					printf("Press \'Enter\' to continue");
 					getchar();
 				}
 
@@ -466,7 +466,7 @@ int main() {
 					losersRPS[1] = 3;
 
 					printf("Bot 3 Wins!\n");
-					printf("Press \'Enter\' To Continue!");
+					printf("Press \'Enter\' to continue");
 					getchar();
 				}
 
@@ -529,24 +529,24 @@ int main() {
 				if (winnerRPS == 0) {
 					if (playerChoicesRPS[0] == 'r') {
 						if (winnersRPS[0] != 1)
-							printf("You and Bot %d picks rock, it\'s a tie", losersRPS[1] - 1);
+							printf("\nYou and Bot %d picks rock, it\'s a tie", losersRPS[1] - 1);
 						else
-							printf("Bot %d and Bot %d picks rock, it\'s a tie", losersRPS[0] - 1, losersRPS[1] - 1);
+							printf("\nBot %d and Bot %d picks rock, it\'s a tie", losersRPS[0] - 1, losersRPS[1] - 1);
 					}
 					else if (playerChoicesRPS[0] == 'p') {
 						if (winnersRPS[0] != 1)
-							printf("You and Bot %d picks paper, it\'s a tie", losersRPS[1] - 1);
+							printf("\nYou and Bot %d picks paper, it\'s a tie", losersRPS[1] - 1);
 						else
-							printf("Bot %d and Bot %d picks paper, it\'s a tie", losersRPS[0] - 1, losersRPS[1] - 1);
+							printf("\nBot %d and Bot %d picks paper, it\'s a tie", losersRPS[0] - 1, losersRPS[1] - 1);
 					}
 					else if (playerChoicesRPS[0] == 's') {
 						if (winnersRPS[0] != 1)
-							printf("You and Bot %d picks scissors, it\'s a tie", losersRPS[1] - 1);
+							printf("\nYou and Bot %d picks scissors, it\'s a tie", losersRPS[1] - 1);
 						else
-							printf("Bot %d and Bot %d picks scissors, it\'s a tie", losersRPS[0] - 1, losersRPS[1] - 1);
+							printf("\nBot %d and Bot %d picks scissors, it\'s a tie", losersRPS[0] - 1, losersRPS[1] - 1);
 					}
 					
-					printf("\nPress \'Enter\' to continue!");
+					printf("\nPress \'Enter\' to continue");
 					getchar();
 
 					continue;
@@ -558,9 +558,9 @@ int main() {
 					turnCycle[3] = losersRPS[1];
 
 					if (winnersRPS[0] != 1)
-						printf("You win and get the 3rd turn!");
+						printf("\nYou win and get the 3rd turn!");
 					else
-						printf("Bot %d win and get the 3rd turn!", winnerRPS - 1);
+						printf("\nBot %d win and get the 3rd turn!", winnerRPS - 1);
 				}
 
 				// If Player 2 Wins
@@ -569,12 +569,12 @@ int main() {
 					turnCycle[3] = losersRPS[0];
 
 					if (winnersRPS[0] != 1)
-						printf("You Lose and get the 4th turn!");
+						printf("\nYou Lose and get the 4th turn!");
 					else
-						printf("Bot %d win and get the 3rd turn!", winnerRPS - 1);
+						printf("\nBot %d win and get the 3rd turn!", winnerRPS - 1);
 				}
 
-				printf("\nPress \'Enter\' to continue!");
+				printf("\nPress \'Enter\' to continue");
 				getchar();
 
 				break;
@@ -636,24 +636,24 @@ int main() {
 				if (winnerRPS == 0) {
 					if (playerChoicesRPS[2] == 'r') {
 						if (winnersRPS[0] == 1)
-							printf("You and Bot %d picks rock, it\'s a tie", winnersRPS[1] - 1);
+							printf("\nYou and Bot %d picks rock, it\'s a tie", winnersRPS[1] - 1);
 						else
-							printf("Bot %d and Bot %d picks rock, it\'s a tie", winnersRPS[0] - 1, winnersRPS[1] - 1);
+							printf("\nBot %d and Bot %d picks rock, it\'s a tie", winnersRPS[0] - 1, winnersRPS[1] - 1);
 					}
 					else if (playerChoicesRPS[2] == 'p') {
 						if (winnersRPS[0] == 1)
-							printf("You and Bot %d picks paper, it\'s a tie", winnersRPS[1] - 1);
+							printf("\nYou and Bot %d picks paper, it\'s a tie", winnersRPS[1] - 1);
 						else
-							printf("Bot %d and Bot %d picks paper, it\'s a tie", winnersRPS[0] - 1, winnersRPS[1] - 1);
+							printf("\nBot %d and Bot %d picks paper, it\'s a tie", winnersRPS[0] - 1, winnersRPS[1] - 1);
 					}
 					else if (playerChoicesRPS[2] == 's') {
 						if (winnersRPS[0] == 1)
-							printf("You and Bot %d picks scissors, it\'s a tie", winnersRPS[1] - 1);
+							printf("\nYou and Bot %d picks scissors, it\'s a tie", winnersRPS[1] - 1);
 						else
-							printf("Bot %d and Bot %d picks scissors, it\'s a tie", winnersRPS[0] - 1, winnersRPS[1] - 1);
+							printf("\nBot %d and Bot %d picks scissors, it\'s a tie", winnersRPS[0] - 1, winnersRPS[1] - 1);
 					}
 					
-					printf("\nPress \'Enter\' to continue!");
+					printf("\nPress \'Enter\' to continue");
 					getchar();
 
 					continue;
@@ -665,9 +665,9 @@ int main() {
 					turnCycle[1] = winnersRPS[1];
 
 					if (winnersRPS[0] == 1)
-						printf("You Win and get the 1st turn!");
+						printf("\nYou Win and get the 1st turn!");
 					else
-						printf("Bot %d win and get the 1st turn!", winnerRPS - 1);
+						printf("\nBot %d win and get the 1st turn!", winnerRPS - 1);
 				}
 
 				// If Player 2 Wins
@@ -676,12 +676,12 @@ int main() {
 					turnCycle[1] = winnersRPS[0];
 
 					if (winnersRPS[0] == 1)
-						printf("You Lose and get the 2nd turn!");
+						printf("\nYou Lose and get the 2nd turn!");
 					else
-						printf("Bot %d win and get the 1st turn!", winnerRPS - 1);
+						printf("\nBot %d win and get the 1st turn!", winnerRPS - 1);
 				}
 
-				printf("\nPress \'Enter\' to continue!");
+				printf("\nPress \'Enter\' to continue");
 				getchar();
 
 				break;
@@ -698,7 +698,7 @@ int main() {
 			for (i = 0; i < 4; i++)
 				printf("%d. %s\n", i + 1, playerNumberToString(turnCycle[i]));
 
-			printf("\nPress \'Enter\' to continue!");
+			printf("\nPress \'Enter\' to continue");
 			getchar();
 
 			// Game Resetter
@@ -1224,7 +1224,7 @@ int main() {
 
 						// If Not
 						if (!canInputPlusCard || plusWarp == 2) {
-							printf("You got %d cards, Press \'Enter\' to continue", currPlus);
+							printf("You got %d cards, press \'Enter\' to continue", currPlus);
 							getchar();
 
 							// Puts the card back to the draw pile if it runs out
@@ -1458,7 +1458,7 @@ int main() {
 
 						// No
 						else if (botWarp == 1) {
-							printf("Bot %d got %d cards, Press \'Enter\' to continue", turnCycle[playerTurn] - 1, currPlus);
+							printf("Bot %d got %d cards, press \'Enter\' to continue", turnCycle[playerTurn] - 1, currPlus);
 							getchar();
 
 							// Puts the card back to the draw pile if it runs out
