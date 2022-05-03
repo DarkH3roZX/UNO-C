@@ -1537,7 +1537,7 @@ int main() {
 							cardAmountInput = 0;
 
 							// UI
-							printf("Input the cards (Press 'Enter' -> 'Ctrl + Z' -> 'Enter' when you're done):\n");
+							printf("\nInput the cards (Press 'Enter' -> 'Ctrl + Z' -> 'Enter' when you're done):\n");
 
 							cardPickDelete(cardPicks, cardPicksDeclaration);
 
