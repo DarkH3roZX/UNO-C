@@ -2118,7 +2118,7 @@ int main() {
 									}
 								}
 
-								printf("\nBot %d grabs a card, Press \'Enter\' to conntinue", turnCycle[playerTurn] - 1);
+								printf("Bot %d grabs a card, Press \'Enter\' to conntinue", turnCycle[playerTurn] - 1);
 								getchar();
 							}
 
