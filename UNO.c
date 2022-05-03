@@ -2243,7 +2243,7 @@ int main() {
 					printf("2. Cards\n");
 					printf("3. Rules\n");
 					printf("4. Closing\n");
-					printf("5. Main Menu\n");
+					printf("5. Main Menu\n\n");
 
 					printf("Your Choice : ");
 					scanf("%d", &instructionsWarp);
@@ -2349,8 +2349,25 @@ int main() {
 			while (instructionsWarp != 5);
 		}
 
-		// Credits
+		// Stats
 		else if (mainWarp == 3) {
+			system("cls");
+			logo();
+
+			printf(" Stats \n");
+			printf("=======\n\n");
+
+			printf("Player Wins : %d\n", stats[0]);
+			printf("Bot 1 Wins : %d\n", stats[1]);
+			printf("Bot 2 Wins : %d\n", stats[2]);
+			printf("Bot 3 Wins : %d\n\n", stats[3]);
+
+			printf("Press \'Enter\' to go back to main menu");
+			getchar();
+		}
+
+		// Credits
+		else if (mainWarp == 4) {
 			system("cls");
 			logo();
 
@@ -2369,23 +2386,6 @@ int main() {
 			printf("=================\n");
 			printf(" Vagous Alliance \n");
 			printf("=================\n\n");
-
-			printf("Press \'Enter\' to go back to main menu");
-			getchar();
-		}
-
-		// Stats
-		else if (mainWarp == 4) {
-			system("cls");
-			logo();
-
-			printf(" Stats \n");
-			printf("=======\n\n");
-
-			printf("Player Wins : %d\n", stats[0]);
-			printf("Bot 1 Wins : %d\n", stats[1]);
-			printf("Bot 2 Wins : %d\n", stats[2]);
-			printf("Bot 3 Wins : %d\n\n", stats[3]);
 
 			printf("Press \'Enter\' to go back to main menu");
 			getchar();
