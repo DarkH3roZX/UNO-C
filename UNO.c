@@ -1762,6 +1762,8 @@ int main() {
 						printf("to play their cards");
 						getchar();
 
+						puts("");
+
 						// Checks if bot can input a card or no
 						cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
 
