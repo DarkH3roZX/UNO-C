@@ -817,9 +817,7 @@ int main() {
 					else 
 						printf("Bot %d lose and get 4th place!", turnCycle[playerTurn] - 1);
 					
-					getchar();
-					
-					printf("Game ends, press \'Enter\' to continue");
+					printf("\n\nGame ends, press \'Enter\' to continue");
 					getchar();
 
 					playerStats[turnCycle[playerTurn] - 1].podiumPlace = 4;
@@ -1723,7 +1721,7 @@ int main() {
 							cardSave(discardHead, &linkedListTemp, discardPileCount - 1);
 
 							if (canInputCard(playerHead, linkedListTemp, playerCards)) {
-								printf("Do you wanna input the card?\n");
+								printf(", do you want to input the card?\n");
 								printf("1. Yes\n");
 								printf("2. No\n\n");
 								
@@ -2118,7 +2116,7 @@ int main() {
 									}
 								}
 
-								printf("Bot %d grabs a card, Press \'Enter\' to conntinue", turnCycle[playerTurn] - 1);
+								printf("Bot %d grabs a card, Press \'Enter\' to continue", turnCycle[playerTurn] - 1);
 								getchar();
 							}
 
@@ -2149,6 +2147,7 @@ int main() {
 
 				// This program runs if one of the player wins
 				if ((turnCycle[playerTurn] == 1 && playerCards == 0) || (turnCycle[playerTurn] == 2 && bot1Cards == 0) || (turnCycle[playerTurn] == 3 && bot2Cards == 0) || (turnCycle[playerTurn] == 4 && bot3Cards == 0)) {
+					puts("");
 					if (turnCycle[playerTurn] == 1)
 						printf("You win and get ");
 					else
@@ -2663,9 +2662,9 @@ void cardPrint(CardData linkedListTemp) {
 			printf("%s ", linkedListTemp.color);
 		
 		if (linkedListTemp.number != -1)
-			printf("%d ", linkedListTemp.number);
+			printf("%d", linkedListTemp.number);
 		else
-			printf("%s ", linkedListTemp.type);
+			printf("%s", linkedListTemp.type);
 	}
 }
 
